@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+import pandas as pd
+
 from evaluation_tool import EvaluationTool
 
 
@@ -68,4 +70,4 @@ class TestEvaluationTool(TestCase):
         self.assertEqual(evaluation_tool.compute_recall(0), 0)
         self.assertEqual(evaluation_tool.compute_recall(1), 0.5)
         self.assertEqual(evaluation_tool.compute_recall(2), 1)
-        self.assertEqual(evaluation_tool.compute_recall(3), 'Undefined')
+        self.assertRaises(ZeroDivisionError, evaluation_tool.compute_recall(3))

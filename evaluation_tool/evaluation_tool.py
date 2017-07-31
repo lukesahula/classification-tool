@@ -1,3 +1,5 @@
+from sklearn.metrics import precision_score
+
 class EvaluationTool():
 
     def __init__(self):
@@ -37,11 +39,11 @@ class EvaluationTool():
         true_positive = self.stats[class_label]['TP']
         false_positive = self.stats[class_label]['FP']
 
-        if true_positive == false_positive == 0:
-            return 'Undefined'
-
-        precision = true_positive / (true_positive + false_positive)
-        return precision
+        try:
+            precision = true_positive / (true_positive + false_positive)
+            return precision
+        except ZeroDivisionError:
+            print("Division by zero.")
 
     def compute_recall(self, class_label):
         '''
@@ -52,8 +54,8 @@ class EvaluationTool():
         true_positive = self.stats[class_label]['TP']
         false_negative = self.stats[class_label]['FN']
 
-        if true_positive == false_negative == 0:
-            return 'Undefined'
-
-        recall = true_positive / (true_positive + false_negative)
-        return recall
+        try:
+            recall = true_positive / (true_positive + false_negative)
+            return recall
+        except ZeroDivisionError:
+            print("Exception by zero.")
