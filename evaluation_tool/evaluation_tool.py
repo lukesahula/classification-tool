@@ -1,34 +1,46 @@
-from sklearn.metrics import precision_score
+from sklearn.metrics import confusion_matrix
+
+import pandas as pd
+import numpy as np
 
 class EvaluationTool():
 
-    def __init__(self):
-        self.stats = {}
+    def __init__(self, file_path, delimiter):
 
-    def compute_stats(self, predicted, real):
-        '''
-        Takes predicted and real labels and increments
-        TPs, FPs, FNs correspondingly.
-        :param predicted: Predicted label
-        :param real: Real label
-        '''
-        if predicted not in self.stats:
-            self.stats[predicted] = {}
-            self.stats[predicted]['TP'] = 0
-            self.stats[predicted]['FP'] = 0
-            self.stats[predicted]['FN'] = 0
+        self.true, self.pred = self.read_data(file_path, delimiter)
+        self.stats = self.compute_stats()
 
-        if real not in self.stats:
-            self.stats[real] = {}
-            self.stats[real]['TP'] = 0
-            self.stats[real]['FP'] = 0
-            self.stats[real]['FN'] = 0
 
-        if predicted == real:
-            self.stats[predicted]['TP'] += 1
-        else:
-            self.stats[predicted]['FP'] += 1
-            self.stats[real]['FN'] += 1
+    def read_data(self, file_path, delimiter):
+        labels = ['true', 'pred']
+        df = pd.read_csv(file_path, delimiter, header=None, names=labels)
+        return (df['true'], df['pred'])
+
+    def compute_stats(self):
+        labels = set(self.true)
+        labels.union(self.pred)
+
+        labels = list(labels)
+        labels.sort()
+
+        matrix = confusion_matrix(self.true, self.pred, labels=labels)
+        FP = matrix.sum(axis=0) - np.diag(matrix)
+        FN = matrix.sum(axis=1) - np.diag(matrix)
+        TP = np.diag(matrix)
+        TN = matrix.sum() - (FP + FN + TP)
+
+        stats = {}
+
+        indexes = range(0, len(matrix[0]))
+
+        for label, index in zip(labels, indexes):
+            stats[label] = {}
+            stats[label]['FP'] = FP[index]
+            stats[label]['FN'] = FN[index]
+            stats[label]['TP'] = TP[index]
+            stats[label]['TN'] = TN[index]
+
+        return stats
 
     def compute_precision(self, class_label):
         '''
@@ -58,4 +70,5 @@ class EvaluationTool():
             recall = true_positive / (true_positive + false_negative)
             return recall
         except ZeroDivisionError:
-            print("Exception by zero.")
+            pass
+        print("Exception by zero.")
