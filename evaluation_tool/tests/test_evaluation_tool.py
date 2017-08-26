@@ -1,4 +1,6 @@
 
+import numpy as np
+
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
@@ -47,9 +49,7 @@ class TestEvaluationTool(object):
         file_path = 'datasets/tests/min_example'
         eval_tool = EvaluationTool(file_path, ';')
 
-
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
-
         prec_sklearn = list(precision_score(
             y_true=eval_tool.true,
             y_pred=eval_tool.pred,
@@ -63,17 +63,15 @@ class TestEvaluationTool(object):
         file_path = 'datasets/tests/min_example'
         eval_tool = EvaluationTool(file_path, ';')
 
-
-        recall = [eval_tool.compute_recall(x) for x in eval_tool.labels]
-
-        recall_sklearn = list(recall_score(
+        rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
+        rec_sklearn = list(recall_score(
             y_true=eval_tool.true,
             y_pred=eval_tool.pred,
             labels=eval_tool.labels,
             average=None
         ))
 
-        assert recall == recall_sklearn
+        assert rec == rec_sklearn
 
 
 
@@ -115,9 +113,7 @@ class TestEvaluationTool(object):
         file_path = 'datasets/tests/min_example_strings'
         eval_tool = EvaluationTool(file_path, ';')
 
-
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
-
         prec_sklearn = list(precision_score(
             y_true=eval_tool.true,
             y_pred=eval_tool.pred,
@@ -131,14 +127,86 @@ class TestEvaluationTool(object):
         file_path = 'datasets/tests/min_example_strings'
         eval_tool = EvaluationTool(file_path, ';')
 
-
-        recall = [eval_tool.compute_recall(x) for x in eval_tool.labels]
-
-        recall_sklearn = list(recall_score(
+        rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
+        rec_sklearn = list(recall_score(
             y_true=eval_tool.true,
             y_pred=eval_tool.pred,
             labels=eval_tool.labels,
             average=None
         ))
 
-        assert recall == recall_sklearn
+        assert rec == rec_sklearn
+
+    def test_compute_precision_string(self):
+        file_path = 'datasets/tests/example_strings'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
+        prec_sklearn = list(precision_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=eval_tool.labels,
+            average=None
+        ))
+
+        assert prec == prec_sklearn
+
+    def test_compute_recall_string(self):
+        file_path = 'datasets/tests/example_strings'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
+        rec_sklearn = list(recall_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=eval_tool.labels,
+            average=None,
+
+        ))
+
+        assert rec == rec_sklearn
+
+    def test_get_avg_precision(self):
+        file_path = 'datasets/tests/example_strings'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        prec = eval_tool.get_avg_precision()
+
+        prec_avg_sklearn = precision_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=eval_tool.labels,
+            average='macro'
+        )
+        assert np.allclose(prec, prec_avg_sklearn)
+
+
+    def test_get_avg_recall(self):
+        file_path = 'datasets/tests/example_strings'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        rec = eval_tool.get_avg_recall()
+
+        rec_avg_sklearn = recall_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=eval_tool.labels,
+            average='macro'
+        )
+        assert np.allclose(rec, rec_avg_sklearn)
+
+    def test_compute_precision_unbalanced(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
+
+        assert np.isnan(prec[4])
+
+    def test_compute_recall_unbalanced(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
+
+        assert np.isnan(rec[3])

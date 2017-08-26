@@ -60,10 +60,7 @@ class EvaluationTool():
         TP = self.stats[class_label]['TP']
         FP = self.stats[class_label]['FP']
 
-        try:
-            return TP / (TP + FP)
-        except ZeroDivisionError:
-            print('Division by zero.')
+        return TP / (TP + FP)
 
     def compute_recall(self, class_label):
         """
@@ -74,7 +71,30 @@ class EvaluationTool():
         TP = self.stats[class_label]['TP']
         FN = self.stats[class_label]['FN']
 
-        try:
-            return TP / (TP + FN)
-        except ZeroDivisionError:
-            print('Exception by zero.')
+        return TP / (TP + FN)
+
+    def get_avg_precision(self):
+        """
+        Returns average precision score from
+        all class labels.
+        """
+        cumsum = 0
+
+        for label in self.labels:
+            cumsum += self.compute_precision(label)
+        avg = cumsum / len(self.labels)
+
+        return avg
+
+    def get_avg_recall(self):
+        """
+        Return average recall score from
+        all class labels.
+        """
+        cumsum = 0
+
+        for label in self.labels:
+            cumsum += self.compute_recall(label)
+        avg = cumsum / len(self.labels)
+
+        return avg
