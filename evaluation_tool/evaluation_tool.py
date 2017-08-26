@@ -7,21 +7,21 @@ import numpy as np
 
 class EvaluationTool():
 
-    def __init__(self, file_path, delimiter):
+    def __init__(self, file_path, delimiter, legit=None):
         self.true = None
         self.pred = None
         self.stats = None
         self.labels = None
 
+        self.legit = legit
         self.__read_data(file_path, delimiter)
         self.__compute_stats()
-
 
     def __read_data(self, file_path, delimiter):
         """
         Reads true/pred data from a file and saves it to dataframes.
         :param file_path: Path to the file
-        :param delimiter: Symbol or as tring by which the data is delimited.
+        :param delimiter: Symbol or a string by which the data is delimited.
         """
         columns = ['true', 'pred']
         df = pd.read_csv(file_path, delimiter, header=None, names=columns)
@@ -73,28 +73,42 @@ class EvaluationTool():
 
         return TP / (TP + FN)
 
-    def get_avg_precision(self):
+    def get_avg_precision(self, legit=True, nan=True):
         """
-        Returns average precision score from
-        all class labels.
+        Counts the average precision.
+        :param legit: If false, legit label is skipped.
+        :param nan: If false, nan precisions are skipped.
+        :return: Average precision.
         """
-        cumsum = 0
+        labels = list(self.labels)
+        if not legit:
+            labels.remove(self.legit)
 
-        for label in self.labels:
-            cumsum += self.compute_precision(label)
-        avg = cumsum / len(self.labels)
+        precs = np.fromiter(map(
+            self.compute_precision, labels), dtype=float, count=len(labels)
+        )
 
-        return avg
+        if not nan:
+            return np.nanmean(precs)
+        else:
+            return np.nansum(precs) / len(labels)
 
-    def get_avg_recall(self):
+    def get_avg_recall(self, legit=True, nan=True):
         """
-        Return average recall score from
-        all class labels.
+        Counts the average recall.
+        :param legit: If false, legit label is skipped.
+        :param nan: If false, nan precisions are skipped.
+        :return: Average recall.
         """
-        cumsum = 0
+        labels = list(self.labels)
+        if not legit:
+            labels.remove(self.legit)
 
-        for label in self.labels:
-            cumsum += self.compute_recall(label)
-        avg = cumsum / len(self.labels)
+        recs = np.fromiter(map(
+            self.compute_recall, labels), dtype=float, count=len(labels)
+        )
 
-        return avg
+        if not nan:
+            return np.nanmean(recs)
+        else:
+            return np.nansum(recs) / len(labels)

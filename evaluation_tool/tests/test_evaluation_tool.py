@@ -210,3 +210,75 @@ class TestEvaluationTool(object):
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
 
         assert np.isnan(rec[3])
+
+    def test_get_avg_prec_legit(self):
+        file_path = 'datasets/tests/min_example'
+        eval_tool = EvaluationTool(file_path, ';', legit=0)
+
+        prec = eval_tool.get_avg_precision(legit=False)
+
+        labels = list(eval_tool.labels)
+        labels.remove(eval_tool.legit)
+
+        prec_avg_sklearn = precision_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=labels,
+            average='macro'
+        )
+        assert np.allclose(prec, prec_avg_sklearn)
+
+    def test_get_avg_rec_legit(self):
+        file_path = 'datasets/tests/min_example'
+        eval_tool = EvaluationTool(file_path, ';', legit=0)
+
+        rec = eval_tool.get_avg_recall(legit=False)
+
+        labels = list(eval_tool.labels)
+        labels.remove(eval_tool.legit)
+
+        rec_avg_sklearn = recall_score(
+            y_true=eval_tool.true,
+            y_pred=eval_tool.pred,
+            labels=labels,
+            average='macro'
+        )
+        assert np.allclose(rec, rec_avg_sklearn)
+
+
+    def test_get_avg_prec_nans_false(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        prec = eval_tool.get_avg_precision(nan=False)
+
+        # TODO: Think of a better assert
+        assert np.allclose(prec, 0.28472)
+
+    def test_get_avg_rec_nans_false(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        rec = eval_tool.get_avg_recall(nan=False)
+
+        # TODO: Think of a better assert
+        assert np.allclose(rec, 0.30357)
+
+    def test_get_avg_prec_nans_true(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        prec_avg = eval_tool.get_avg_precision(nan=True)
+
+        # TODO: Think of a better assert
+        assert np.allclose(prec_avg, 0.227777)
+
+    def test_get_avg_rec_nans_true(self):
+        file_path = 'datasets/tests/example_unbalanced'
+        eval_tool = EvaluationTool(file_path, ';')
+
+        rec_avg = eval_tool.get_avg_recall(nan=True)
+
+
+        # TODO: Think of a better assert
+        assert np.allclose(rec_avg, 0.242857)
