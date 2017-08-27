@@ -1,4 +1,6 @@
 
+import os
+
 import numpy as np
 
 from sklearn.metrics import precision_score
@@ -6,12 +8,13 @@ from sklearn.metrics import recall_score
 
 from ..evaluation_tool import EvaluationTool
 
+ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 
 
 class TestEvaluationTool(object):
 
     def test_read_data(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';')
 
         trues = [1, 0, 1, 0, 1, 2, 0, 0, 2, 1, 1, 2, 1, 1, 0]
@@ -20,7 +23,7 @@ class TestEvaluationTool(object):
         assert list(eval_tool.true), list(eval_tool.pred) == (trues, preds)
 
     def test_compute_stats(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';')
 
         stats = {
@@ -47,7 +50,7 @@ class TestEvaluationTool(object):
         assert eval_tool.stats == stats
 
     def test_compute_precision(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
@@ -61,7 +64,7 @@ class TestEvaluationTool(object):
         assert prec == prec_sklearn
 
     def test_compute_recall(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
@@ -75,7 +78,7 @@ class TestEvaluationTool(object):
         assert rec == rec_sklearn
 
     def test_read_data_strings(self):
-        file_path = 'datasets/tests/min_example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/min_example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         trues = ['b', 'a', 'b', 'a', 'b', 'c', 'a', 'a',
@@ -86,7 +89,7 @@ class TestEvaluationTool(object):
         assert list(eval_tool.true), list(eval_tool.pred) == (trues, preds)
 
     def test_compute_stats_strings(self):
-        file_path = 'datasets/tests/min_example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/min_example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         stats = {
@@ -113,7 +116,7 @@ class TestEvaluationTool(object):
         assert eval_tool.stats == stats
 
     def test_compute_precision_strings(self):
-        file_path = 'datasets/tests/example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
@@ -127,7 +130,7 @@ class TestEvaluationTool(object):
         assert prec == prec_sklearn
 
     def test_compute_recall_strings(self):
-        file_path = 'datasets/tests/example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
@@ -142,7 +145,7 @@ class TestEvaluationTool(object):
         assert rec == rec_sklearn
 
     def test_get_avg_precision(self):
-        file_path = 'datasets/tests/example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec = eval_tool.get_avg_precision()
@@ -157,7 +160,7 @@ class TestEvaluationTool(object):
 
 
     def test_get_avg_recall(self):
-        file_path = 'datasets/tests/example_strings'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec = eval_tool.get_avg_recall()
@@ -170,7 +173,7 @@ class TestEvaluationTool(object):
         assert np.allclose(rec, rec_avg_sklearn)
 
     def test_compute_precision_unbalanced(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
@@ -178,7 +181,7 @@ class TestEvaluationTool(object):
         assert np.isnan(prec[4])
 
     def test_compute_recall_unbalanced(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
@@ -186,7 +189,7 @@ class TestEvaluationTool(object):
         assert np.isnan(rec[3])
 
     def test_get_avg_prec_legit(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';', legit=0)
 
         prec = eval_tool.get_avg_precision(legit=False)
@@ -202,7 +205,7 @@ class TestEvaluationTool(object):
         assert np.allclose(prec, prec_avg_sklearn)
 
     def test_get_avg_rec_legit(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';', legit=0)
 
         rec = eval_tool.get_avg_recall(legit=False)
@@ -219,7 +222,7 @@ class TestEvaluationTool(object):
 
 
     def test_get_avg_prec_nans_false(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec = eval_tool.get_avg_precision(nan=False)
@@ -228,7 +231,7 @@ class TestEvaluationTool(object):
         assert np.allclose(prec, 0.28472)
 
     def test_get_avg_rec_nans_false(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec = eval_tool.get_avg_recall(nan=False)
@@ -237,7 +240,7 @@ class TestEvaluationTool(object):
         assert np.allclose(rec, 0.30357)
 
     def test_get_avg_prec_nans_true(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         prec_avg = eval_tool.get_avg_precision(nan=True)
@@ -246,7 +249,7 @@ class TestEvaluationTool(object):
         assert np.allclose(prec_avg, 0.227777)
 
     def test_get_avg_rec_nans_true(self):
-        file_path = 'datasets/tests/example_unbalanced'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
         eval_tool = EvaluationTool(file_path, ';')
 
         rec_avg = eval_tool.get_avg_recall(nan=True)
@@ -256,7 +259,7 @@ class TestEvaluationTool(object):
         assert np.allclose(rec_avg, 0.242857)
 
     def test_read_keys(self):
-        file_path = 'datasets/tests/example_keys'
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(file_path, ';', agg_key='user')
 
         keys = ['user', 'hostname', 'pcapID', 'user', 'hostname', 'user',

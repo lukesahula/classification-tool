@@ -63,6 +63,8 @@ class EvaluationTool():
         TP = self.stats[class_label]['TP']
         FP = self.stats[class_label]['FP']
 
+        if TP + FP == 0:
+            return np.nan
         return TP / (TP + FP)
 
     def compute_recall(self, class_label):
@@ -74,6 +76,8 @@ class EvaluationTool():
         TP = self.stats[class_label]['TP']
         FN = self.stats[class_label]['FN']
 
+        if TP + FN == 0:
+            return np.nan
         return TP / (TP + FN)
 
     def get_avg_precision(self, legit=True, nan=True):
