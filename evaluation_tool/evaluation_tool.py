@@ -7,13 +7,15 @@ import numpy as np
 
 class EvaluationTool():
 
-    def __init__(self, file_path, delimiter, legit=None):
+    def __init__(self, file_path, delimiter, legit=None, agg_key=None):
         self.true = None
         self.pred = None
         self.stats = None
         self.labels = None
+        self.keys = None
 
         self.legit = legit
+        self.agg_key = agg_key
         self.__read_data(file_path, delimiter)
         self.__compute_stats()
 
@@ -23,10 +25,12 @@ class EvaluationTool():
         :param file_path: Path to the file
         :param delimiter: Symbol or a string by which the data is delimited.
         """
-        columns = ['true', 'pred']
+        columns = ['true', 'pred', 'key']
         df = pd.read_csv(file_path, delimiter, header=None, names=columns)
         self.true = df['true']
         self.pred = df['pred']
+        if not df['key'].isnull().any():
+            self.keys = df['key']
 
     def __compute_stats(self):
         """
@@ -39,7 +43,6 @@ class EvaluationTool():
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
         TN = matrix.sum() - (FP + FN + TP)
-
 
         stats = defaultdict(dict)
 
