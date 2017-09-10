@@ -11,5 +11,6 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
-          - pip install -r evaluation_tool/requirements.txt
-          - pytest --cov=evaluation_tool
+          - pip install -r requirements.txt
+          - pytest classification_tool --cov=classification_tool
+          - pytest evaluation_tool --cov=evaluation_tool
