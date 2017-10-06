@@ -1,7 +1,6 @@
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.ensemble import ExtraTreesClassifier as ETC
 
 
 class CiscoRunner():
@@ -14,7 +13,13 @@ class CiscoRunner():
             'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
-        rfc = ETC(n_estimators=1, max_features=5, min_samples_split=1000, criterion="entropy", n_jobs=-1)
+        rfc = RFC(
+            n_estimators=2,
+            max_features=5,
+            min_samples_split=1000,
+            criterion="entropy",
+            n_jobs=1
+        )
         clas_tool = ClassificationTool()
         clas_tool.training_data = clas_tool.load_dataset(cisco_training, True)
         clas_tool.train_classifier(rfc)
