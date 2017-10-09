@@ -52,16 +52,13 @@ class ClassificationTool():
         with open(output_file, 'w', encoding='utf-8', newline='') as file:
             writer = csv.writer(file, delimiter=';')
 
-            test_result = pd.DataFrame()
+            preds = []
             for chunk in chunks(self.testing_data[0].index, 1000):
-                test_data = self.testing_data[0].ix[chunk]
-
-                test_result = pd.concat(
-                    [test_result, pd.DataFrame(self.classifier.predict(test_data))])
-
+                to_predict = self.testing_data[0].ix[chunk]
+                preds = preds + list(self.classifier.predict(to_predict))
 
             writer.writerows(zip(
                     self.testing_data[1],
-                    test_result[0].values
+                    preds
                 )
             )
