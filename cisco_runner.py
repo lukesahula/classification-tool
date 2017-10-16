@@ -7,10 +7,10 @@ class CiscoRunner():
 
     def execute_run(self):
         cisco_training = (
-            'classification_tool/datasets/cisco_datasets/data/20170104'
+            'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
         cisco_testing = (
-            'classification_tool/datasets/cisco_datasets/data/20170111'
+            'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
         rfc = RFC(
@@ -20,10 +20,14 @@ class CiscoRunner():
             criterion="entropy",
             n_jobs=-1
         )
-        clas_tool = ClassificationTool()
-        clas_tool.training_data = clas_tool.load_dataset(cisco_training, True)
-        clas_tool.train_classifier(rfc)
-        clas_tool.testing_data = clas_tool.load_dataset(cisco_testing, True)
+        clas_tool = ClassificationTool(
+            rfc,
+            cisco_training,
+            cisco_testing,
+            True
+        )
+
+        clas_tool.train_classifier()
 
         predictions_output = 'classification_tool/outputs/rfc.cisco'
 

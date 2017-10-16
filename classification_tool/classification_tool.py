@@ -4,15 +4,16 @@ import glob
 import pandas as pd
 import numpy as np
 import csv
-import scipy
 
 class ClassificationTool():
 
-    def __init__(self):
+    def __init__(self, classifier, tr_path, t_path, zipped=False):
 
-        self.training_data = None
-        self.testing_data = None
-        self.classifier = None
+        self.classifier = classifier
+        self.tr_path = tr_path
+        self.t_path = t_path
+        self.zipped = zipped
+
 
     def load_dataset(self, path, zipped=False):
 
@@ -35,10 +36,10 @@ class ClassificationTool():
 
             return (data[data.columns[4:]], data[data.columns[3]])
 
-    def train_classifier(self, classifier):
-        self.classifier = classifier
-        self.classifier.fit(self.training_data[0], self.training_data[1])
-        self.training_data = None
+    def train_classifier(self):
+        self.tr_data = self.load_dataset(self.tr_path, self.zipped)
+        self.classifier.fit(self.tr_data[0], self.tr_data[1])
+        self.tr_data = None
 
     def save_predictions(self, output_file):
 
@@ -49,16 +50,19 @@ class ClassificationTool():
             for i in range(0, len(dataframe), n):
                 yield dataframe[i:i + n]
 
+
+        self.t_data = self.load_dataset(self.t_path, zipped=self.zipped)
+
         with open(output_file, 'w', encoding='utf-8', newline='') as file:
             writer = csv.writer(file, delimiter=';')
 
             preds = []
-            for chunk in chunks(self.testing_data[0].index, 1000):
-                to_predict = self.testing_data[0].ix[chunk]
+            for chunk in chunks(self.t_data[0].index, 1000):
+                to_predict = self.t_data[0].ix[chunk]
                 preds = preds + list(self.classifier.predict(to_predict))
 
             writer.writerows(zip(
-                    self.testing_data[1],
+                    self.t_data[1],
                     preds
                 )
             )
