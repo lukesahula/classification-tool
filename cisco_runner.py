@@ -7,11 +7,13 @@ class CiscoRunner():
 
     def execute_run(self):
         cisco_training = (
-            'classification_tool/datasets/cisco_datasets/data/test_tr'
+            'classification_tool/datasets/cisco_datasets/data/20170104'
         )
         cisco_testing = (
-            'classification_tool/datasets/cisco_datasets/data/test_t'
+            'classification_tool/datasets/cisco_datasets/data/20170111'
         )
+
+        samples = '1000'
 
         rfc = RFC(
             n_estimators=10,
@@ -20,18 +22,10 @@ class CiscoRunner():
             criterion="entropy",
             n_jobs=-1
         )
-        clas_tool = ClassificationTool(
-            rfc,
-            cisco_training,
-            cisco_testing,
-            True
-        )
-
-        clas_tool.train_classifier()
-
+        clas_tool = ClassificationTool(rfc)
+        clas_tool.train_classifier(cisco_training, samples)
         predictions_output = 'classification_tool/outputs/rfc.cisco'
-
-        clas_tool.save_predictions(predictions_output)
+        clas_tool.save_predictions(cisco_testing, samples, predictions_output)
 
         eval_tool = EvaluationTool(predictions_output, ';')
         print("Average precision: %f" %(eval_tool.get_avg_precision()))

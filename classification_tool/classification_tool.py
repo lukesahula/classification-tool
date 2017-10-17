@@ -7,41 +7,33 @@ import csv
 
 class ClassificationTool():
 
-    def __init__(self, classifier, tr_path, t_path, zipped=False):
+    def __init__(self, classifier):
 
         self.classifier = classifier
-        self.tr_path = tr_path
-        self.t_path = t_path
-        self.zipped = zipped
 
+    def load_dataset(self, path, samples=None):
 
-    def load_dataset(self, path, zipped=False):
+        pos = os.path.join(path, 'pos', 'pos_test')
+        neg = os.path.join(path, 'neg_seed_01_samples_' + samples, 'sampled')
 
-        if not zipped:
-            data = datasets.load_svmlight_file(path)
-            return (pd.DataFrame(data[0].toarray()), data[1])
-        else:
-            files = glob.glob(os.path.join(path, 'neg', '*.gz'))
-            files += glob.glob(os.path.join(path, 'pos', '*.gz'))
+        data = pd.DataFrame()
+        data = pd.concat((data, pd.read_csv(pos, sep='\t', header=None)))
+        data = pd.concat((data, pd.read_csv(neg, sep='\t', header=None)))
 
-            data = pd.concat(
-                pd.read_csv(f, sep='\t', header=None) for f in files
-            )
+        data.replace(
+            to_replace=np.nan,
+            value=-1000000,
+            inplace=True
+        )
 
-            data.replace(
-                to_replace=np.nan,
-                value=-1000000,
-                inplace=True
-            )
+        return (data[data.columns[4:]], data[data.columns[3]])
 
-            return (data[data.columns[4:]], data[data.columns[3]])
-
-    def train_classifier(self):
-        self.tr_data = self.load_dataset(self.tr_path, self.zipped)
+    def train_classifier(self, tr_path, samples):
+        self.tr_data = self.load_dataset(tr_path, samples)
         self.classifier.fit(self.tr_data[0], self.tr_data[1])
         self.tr_data = None
 
-    def save_predictions(self, output_file):
+    def save_predictions(self, t_path, samples, output_file):
 
         def chunks(dataframe, n):
             """
@@ -51,7 +43,7 @@ class ClassificationTool():
                 yield dataframe[i:i + n]
 
 
-        self.t_data = self.load_dataset(self.t_path, zipped=self.zipped)
+        self.t_data = self.load_dataset(t_path, samples)
 
         with open(output_file, 'w', encoding='utf-8', newline='') as file:
             writer = csv.writer(file, delimiter=';')
