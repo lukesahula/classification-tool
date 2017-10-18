@@ -1,6 +1,8 @@
 import os
 import pytest
 
+import pandas as pd
+
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 
@@ -59,3 +61,9 @@ class TestClassificationTool(object):
         clas_tool.save_predictions(t_path, '1000', output_file)
 
         assert os.path.isfile(output_file)
+
+    def test_quantize_data(self):
+        column = pd.Series(range(20))
+        clas_tool = ClassificationTool(None)
+        column = clas_tool.quantize_data(column)
+        print(column)
