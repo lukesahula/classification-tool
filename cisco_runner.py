@@ -21,7 +21,9 @@ class CiscoRunner():
         min_samples_split = 1000
         criterion = 'entropy'
         n_jobs = -1
-        samples = '1000'
+        samples = '100000'
+        bin_samples = 50000
+        random_state = 0
 
         with open(eval_output, 'w', encoding='utf-8') as f:
             tee('Running cisco runner with the following configuration:\n', f)
@@ -34,7 +36,10 @@ class CiscoRunner():
                 .format(str(min_samples_split)), f)
             tee('Criterion: {}'.format(criterion), f)
             tee('Number of jobs: {}'.format(str(n_jobs)), f)
-            tee('Number of negative samples: {}\n'.format(samples), f)
+            tee('Number of negative samples: {}'.format(samples), f)
+            tee('Number of samples for quantization: {}'
+                .format(str(bin_samples)), f)
+            tee('Seed: {}\n'.format(random_state), f)
 
 
         rfc = RFC(
@@ -42,12 +47,18 @@ class CiscoRunner():
             max_features=max_features,
             min_samples_split=min_samples_split,
             criterion=criterion,
-            n_jobs=n_jobs
+            n_jobs=n_jobs,
+            random_state=random_state
         )
         clas_tool = ClassificationTool(rfc)
-        clas_tool.train_classifier(cisco_training, samples)
+        clas_tool.train_classifier(cisco_training, samples, bin_samples)
         predictions_output = 'classification_tool/outputs/rfc.cisco'
-        clas_tool.save_predictions(cisco_testing, samples, predictions_output)
+        clas_tool.save_predictions(
+            cisco_testing,
+            samples,
+            predictions_output,
+            bin_samples
+        )
 
         eval_tool = EvaluationTool(predictions_output, ';')
         with open(eval_output, 'a', encoding='utf-8') as f:
