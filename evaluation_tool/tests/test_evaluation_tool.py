@@ -1,5 +1,5 @@
-
 import os
+import pytest
 
 import numpy as np
 
@@ -20,7 +20,7 @@ class TestEvaluationTool(object):
         trues = [1, 0, 1, 0, 1, 2, 0, 0, 2, 1, 1, 2, 1, 1, 0]
         preds = [1, 2, 1, 2, 1, 1, 2, 0, 1, 0, 1, 2, 0, 1, 1]
 
-        assert list(eval_tool.true), list(eval_tool.pred) == (trues, preds)
+        assert list(eval_tool.trues), list(eval_tool.preds) == (trues, preds)
 
     def test_compute_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
@@ -55,8 +55,8 @@ class TestEvaluationTool(object):
 
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
         prec_sklearn = list(precision_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average=None
         ))
@@ -69,8 +69,8 @@ class TestEvaluationTool(object):
 
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
         rec_sklearn = list(recall_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average=None
         ))
@@ -86,7 +86,7 @@ class TestEvaluationTool(object):
         preds = ['b', 'c', 'b', 'c', 'b', 'b', 'c', 'a',
                  'b', 'a', 'b', 'c', 'a', 'b', 'b']
 
-        assert list(eval_tool.true), list(eval_tool.pred) == (trues, preds)
+        assert list(eval_tool.trues), list(eval_tool.preds) == (trues, preds)
 
     def test_compute_stats_strings(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/min_example_strings')
@@ -121,8 +121,8 @@ class TestEvaluationTool(object):
 
         prec = [eval_tool.compute_precision(x) for x in eval_tool.labels]
         prec_sklearn = list(precision_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average=None
         ))
@@ -135,8 +135,8 @@ class TestEvaluationTool(object):
 
         rec = [eval_tool.compute_recall(x) for x in eval_tool.labels]
         rec_sklearn = list(recall_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average=None,
 
@@ -150,8 +150,8 @@ class TestEvaluationTool(object):
 
         prec = eval_tool.get_avg_precision()
         prec_avg_sklearn = precision_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average='macro'
         )
@@ -165,8 +165,8 @@ class TestEvaluationTool(object):
 
         rec = eval_tool.get_avg_recall()
         rec_avg_sklearn = recall_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=eval_tool.labels,
             average='macro'
         )
@@ -196,8 +196,8 @@ class TestEvaluationTool(object):
         labels = list(eval_tool.labels)
         labels.remove(eval_tool.legit)
         prec_avg_sklearn = precision_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=labels,
             average='macro'
         )
@@ -212,8 +212,8 @@ class TestEvaluationTool(object):
         labels = list(eval_tool.labels)
         labels.remove(eval_tool.legit)
         rec_avg_sklearn = recall_score(
-            y_true=eval_tool.true,
-            y_pred=eval_tool.pred,
+            y_true=eval_tool.trues,
+            y_pred=eval_tool.preds,
             labels=labels,
             average='macro'
         )

@@ -4,10 +4,8 @@ import pytest
 import pandas as pd
 
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.ensemble import ExtraTreesClassifier as ETC
 
 from ..classification_tool import ClassificationTool
-from ...evaluation_tool.evaluation_tool import EvaluationTool
 
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 

@@ -1,4 +1,5 @@
 from utils.utils import tee
+from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -8,22 +9,26 @@ class CiscoRunner():
 
     def execute_run(self):
         cisco_training = (
-            'classification_tool/datasets/cisco_datasets/data/20170104'
+            'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
         cisco_testing = (
-            'classification_tool/datasets/cisco_datasets/data/20170111'
+            'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
         eval_output = 'evaluation_tool/outputs/rfc.cisco'
 
-        n_estimators = 10
-        max_features = 10
-        min_samples_split = 1000
+        n_estimators = 100
+        max_features = 'sqrt'
+        min_samples_split = 2
         criterion = 'entropy'
         n_jobs = -1
-        samples = '100000'
-        bin_samples = 50000
         random_state = 0
+
+        sampling_settings = {
+            'neg_samples': 10000,
+            'bin_samples': 5000,
+            'seed': random_state
+        }
 
         with open(eval_output, 'w', encoding='utf-8') as f:
             tee('Running cisco runner with the following configuration:\n', f)
@@ -36,9 +41,10 @@ class CiscoRunner():
                 .format(str(min_samples_split)), f)
             tee('Criterion: {}'.format(criterion), f)
             tee('Number of jobs: {}'.format(str(n_jobs)), f)
-            tee('Number of negative samples: {}'.format(samples), f)
+            tee('Number of negative samples: {}'
+                .format(str(sampling_settings['neg_samples'])), f)
             tee('Number of samples for quantization: {}'
-                .format(str(bin_samples)), f)
+                .format(str(sampling_settings['bin_samples'])), f)
             tee('Seed: {}\n'.format(random_state), f)
 
 
@@ -50,14 +56,13 @@ class CiscoRunner():
             n_jobs=n_jobs,
             random_state=random_state
         )
-        clas_tool = ClassificationTool(rfc)
-        clas_tool.train_classifier(cisco_training, samples, bin_samples)
+        loading_tool = LoadingTool(sampling_settings)
+        clas_tool = ClassificationTool(rfc, loading_tool)
+        clas_tool.train_classifier(cisco_training)
         predictions_output = 'classification_tool/outputs/rfc.cisco'
         clas_tool.save_predictions(
             cisco_testing,
-            samples,
             predictions_output,
-            bin_samples
         )
 
         eval_tool = EvaluationTool(predictions_output, ';')
