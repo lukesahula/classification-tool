@@ -25,6 +25,7 @@ class CiscoRunner():
         random_state = 0
 
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': 10000,
             'bin_samples': 5000,
             'seed': random_state
@@ -45,6 +46,8 @@ class CiscoRunner():
                 .format(str(sampling_settings['neg_samples'])), f)
             tee('Number of samples for quantization: {}'
                 .format(str(sampling_settings['bin_samples'])), f)
+            tee('Bin count: {}'
+                .format(str(sampling_settings['bin_count'])), f)
             tee('Seed: {}\n'.format(random_state), f)
 
 
@@ -66,20 +69,23 @@ class CiscoRunner():
         )
 
         eval_tool = EvaluationTool(predictions_output, ';')
+        stats = eval_tool.compute_stats(eval_tool.trues, eval_tool.preds)
+        labels = list(stats.keys())
         with open(eval_output, 'a', encoding='utf-8') as f:
             tee('Average precision: {}'
-                .format(eval_tool.get_avg_precision()), f)
-            tee('Average recall: {}'.format(eval_tool.get_avg_recall()), f)
+                .format(eval_tool.get_avg_precision(labels, stats)), f)
+            tee('Average recall: {}'
+                .format(eval_tool.get_avg_recall(labels, stats)), f)
             tee('\nPrecisions per label:', f)
 
-            for label in eval_tool.labels:
+            for label in labels:
                 tee('Label: %.1f, precision: %f'
-                    %(label, eval_tool.compute_precision(label)), f)
+                    %(label, eval_tool.compute_precision(label, stats)), f)
 
             tee('\nRecalls per label:', f)
-            for label in eval_tool.labels:
+            for label in labels:
                 tee('Label: %.1f, recall: %f'
-                    %(label, eval_tool.compute_recall(label)), f)
+                    %(label, eval_tool.compute_recall(label, stats)), f)
 
 runner = CiscoRunner()
 runner.execute_run()

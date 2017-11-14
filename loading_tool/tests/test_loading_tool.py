@@ -1,17 +1,17 @@
 import os
 import pandas as pd
 import pytest
-from ..loading_tool import LoadingTool
-from ..loading_tool import load_classifications
 
-ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
+from loading_tool.loading_tool import *
+
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets'))
 
-class TestEvaluationTool(object):
+class TestLoadingTool(object):
 
-    def test_load_cisco_dataset_unsampled(self):
+    def test_load_cisco_dataset(self):
         path = DATA_DIR
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': 2,
             'bin_samples': 2,
             'seed': 0
@@ -26,14 +26,25 @@ class TestEvaluationTool(object):
             [2, 2, 2, 2],
             [3, 3, 3, 3]
         ]
+        expected_metadata = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3]
+        ]
         expected = (
             pd.DataFrame(expected_features),
-            pd.Series(expected_labels)
+            pd.Series(expected_labels),
+            pd.DataFrame(expected_metadata)
         )
-        assert expected[0].equals(result[0]) and expected[1].equals(result[1])
+        assert (expected[0].equals(result[0])
+                and expected[1].equals(result[1])
+                and expected[2].equals(result[2]))
 
     def test_sample_indices(self):
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': 10,
             'bin_samples': 0,
             'seed': 0
@@ -48,6 +59,7 @@ class TestEvaluationTool(object):
     def test_compute_bins(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': None,
             'bin_samples': 3,
             'seed': 0
@@ -66,6 +78,7 @@ class TestEvaluationTool(object):
     def test_quantize_data(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': None,
             'bin_samples': 3,
             'seed': 0
@@ -89,6 +102,7 @@ class TestEvaluationTool(object):
     def test_quantize_data_unbinned(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
         sampling_settings = {
+            'bin_count': 16,
             'neg_samples': None,
             'bin_samples': 3,
             'seed': 0
@@ -108,23 +122,26 @@ class TestEvaluationTool(object):
         path = os.path.join(DATA_DIR, 'test_classifications')
         delim = ';'
         result = load_classifications(path, delim)
-        result = (list(result[0]), list(result[1]), list(result[2]))
+        result = (list(result[0]), list(result[1]))
         expected = (
             [10, 10, 5, 4, 4, 4, 10, 8, 10, 9],
             [10, 9, 5, 4, 9, 8, 8, 8, 10, 9],
-            []
         )
         assert result == expected
 
     def test_load_classifications_keys(self):
         path = os.path.join(DATA_DIR, 'test_classifications_keys')
         delim = ';'
-        result = load_classifications(path, delim)
-        result = (list(result[0]), list(result[1]), list(result[2]))
-        expected = (
-            [10, 10, 5, 4, 4, 4, 10, 8, 10, 9],
-            [10, 9, 5, 4, 9, 8, 8, 8, 10, 9],
-            [1, 1, 2, 1, 2, 1, 2, 2, 2, 2]
+        result = load_classifications(path, delim, metadata=True)
+        result = result[2]
+
+        expected = pd.DataFrame(
+            np.array([
+                [1, 1, 2, 1, 2, 1, 2, 2, 2, 2],
+                [1, 1, 2, 1, 2, 1, 2, 2, 2, 2],
+                [1, 1, 2, 1, 2, 1, 2, 2, 2, 2],
+            ]).transpose(),
+            columns=['timestamp', 'user', 'flow']
         )
-        assert result == expected
+        assert result.equals(expected)
 

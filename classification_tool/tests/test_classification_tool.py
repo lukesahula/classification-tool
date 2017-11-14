@@ -1,67 +1,47 @@
 import os
 import pytest
 
-import pandas as pd
-
 from sklearn.ensemble import RandomForestClassifier as RFC
 
-from ..classification_tool import ClassificationTool
+from classification_tool.classification_tool import ClassificationTool
+from loading_tool.loading_tool import LoadingTool
 
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
-
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets'))
 
 class TestClassificationTool(object):
 
-    def test_load_datasets(self):
-        tr_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170104'
-        )
-        t_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170111'
-        )
-        clas_tool = ClassificationTool(None)
-        clas_tool.training_data = clas_tool.load_dataset(tr_path, '1000')
-        clas_tool.testing_data = clas_tool.load_dataset(t_path, '1000')
-
-        assert (clas_tool.testing_data[0].shape[0]
-                + clas_tool.training_data[0].shape[0]) == 4000
-
     def test_train_classifier(self):
-        tr_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170104'
-        )
-        t_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170111'
-        )
+        tr_path = os.path.join(DATA_DIR, 'test_tr')
         rfc = RFC(n_estimators=100, criterion="entropy", n_jobs=-1)
-        clas_tool = ClassificationTool(rfc)
-        clas_tool.t_data = clas_tool.load_dataset(t_path, '1000')
-        clas_tool.train_classifier(tr_path, '1000')
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 7,
+            'bin_samples': 20,
+            'seed': 0
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        clas_tool = ClassificationTool(rfc, loading_tool)
+        clas_tool.train_classifier(tr_path)
 
-        # TODO: Think of a better assert
-        assert (clas_tool.classifier.score(
-            clas_tool.t_data[0], clas_tool.t_data[1]) == 0.7585)
+        assert list(clas_tool.classifier.classes_) == [0, 1, 2, 3]
 
     def test_save_predictions(self):
-        tr_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170104'
-        )
-        t_path = os.path.join(
-            ROOT_DIR, 'datasets/cisco_datasets/data/20170111'
-        )
+        tr_path = os.path.join(DATA_DIR, 'test_tr')
+        t_path = os.path.join(DATA_DIR, 'test_t')
         rfc = RFC(n_estimators=100, criterion="entropy", n_jobs=-1)
-        clas_tool = ClassificationTool(rfc)
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 7,
+            'bin_samples': 20,
+            'seed': 0
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        clas_tool = ClassificationTool(rfc, loading_tool)
+        clas_tool.train_classifier(tr_path)
 
-        clas_tool.train_classifier(tr_path, '1000')
-
-        output_file = os.path.join(ROOT_DIR, 'outputs/rfc.cisco')
-
-        clas_tool.save_predictions(t_path, '1000', output_file)
-
+        output_file = os.path.join(ROOT_DIR, 'outputs/rfc.test')
+        clas_tool.save_predictions(t_path, output_file)
         assert os.path.isfile(output_file)
 
-    def test_quantize_data(self):
-        column = pd.Series(range(20))
-        clas_tool = ClassificationTool(None)
-        column = clas_tool.quantize_data(column)
-        print(column)
+        os.remove(output_file)

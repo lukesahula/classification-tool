@@ -1,5 +1,3 @@
-import pandas as pd
-import numpy as np
 import csv
 
 class ClassificationTool():
@@ -42,7 +40,8 @@ class ClassificationTool():
 
         self.t_data = (
             self.loading_tool.quantize_data(self.t_data[0]),
-            self.t_data[1]
+            self.t_data[1],
+            self.t_data[2]
         )
 
         with open(output_file, 'w', encoding='utf-8', newline='') as file:
@@ -53,8 +52,12 @@ class ClassificationTool():
                 to_predict = self.t_data[0].ix[chunk]
                 preds = preds + list(self.classifier.predict(to_predict))
 
-            writer.writerows(zip(
+            writer.writerows(
+                zip(
                     self.t_data[1],
-                    preds
+                    preds,
+                    self.t_data[2][0],
+                    self.t_data[2][1],
+                    self.t_data[2][2]
                 )
             )

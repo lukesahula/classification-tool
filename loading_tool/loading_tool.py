@@ -9,6 +9,7 @@ class LoadingTool():
     def __init__(self, sampling_settings):
 
         self.bins = None
+        self.bin_count = sampling_settings['bin_count']
         self.bin_samples = sampling_settings['bin_samples']
         self.neg_samples = sampling_settings['neg_samples']
         self.seed = sampling_settings['seed']
@@ -31,7 +32,11 @@ class LoadingTool():
 
         # Read positive records and concatenate with sampled negatives.
         files = glob.glob(os.path.join(path, 'pos', '*.gz'))
-        data = pd.concat([data, pd.concat(pd.read_csv(f, sep='\t', header=None) for f in files)])
+        data = pd.concat(
+            [data, pd.concat(
+                pd.read_csv(f, sep='\t', header=None) for f in files
+            )]
+        )
 
         # Replace nans
         data.replace(
@@ -40,13 +45,15 @@ class LoadingTool():
             inplace=True
         )
 
+        metadata = data[data.columns[:3]]
         labels = data[data.columns[3]]
         data = data[data.columns[4:]]
         data.rename(columns=lambda x: x-4, inplace=True)
+        metadata.reset_index(drop=True, inplace=True)
         labels.reset_index(drop=True, inplace=True)
         data.reset_index(drop=True, inplace=True)
 
-        return (data, labels)
+        return (data, labels, metadata)
 
     def sample_indices(self, indices):
         """
@@ -67,7 +74,10 @@ class LoadingTool():
         bins = []
 
         for column in dataset.columns:
-            sampled = dataset[column].sample(self.bin_samples, random_state=0)
+            sampled = dataset[column].sample(
+                self.bin_samples,
+                random_state=self.seed
+            )
 
             if sampled.nunique() == 1:
                 bins.append([sampled.iloc[0]])
@@ -104,18 +114,26 @@ class LoadingTool():
 
         return quantized_frame
 
-def load_classifications(file_path, delimiter):
+def load_classifications(file_path, delimiter, metadata=False):
     """
-    Reads true/pred data from a file and saves it to dataframes.
+    Reads true/pred data from a file and saves it to dataframes. Optionally reads also metadata into a pandas dataframe.
     :param file_path: Path to the file
     :param delimiter: Symbol or a string by which the data is delimited.
+    :param metadata: Whether to read metadata as well.
     """
-    columns = ['true', 'pred', 'key']
-    df = pd.read_csv(file_path, delimiter, header=None, names=columns)
+    columns = ['true', 'pred']
+    df = pd.read_csv(
+        file_path, delimiter, header=None, names=columns, usecols=[0, 1]
+    )
     trues = df['true']
     preds = df['pred']
-    keys = []
-    if not df['key'].isnull().any():
-        keys = df['key']
 
-    return (trues, preds, keys)
+    df = None
+
+    if metadata:
+        columns = ['timestamp', 'user', 'flow']
+        df = pd.read_csv(
+            file_path, delimiter, header=None, names=columns, usecols=[2, 3, 4]
+        )
+
+    return (trues, preds, df)

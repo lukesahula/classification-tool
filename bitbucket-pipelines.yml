@@ -1,16 +1,13 @@
-# This is a sample build configuration for Python.
-# Check our guides at https://confluence.atlassian.com/x/x4UWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: python:3.6.2
+image: python:3.6.3
 
 pipelines:
   default:
     - step:
         caches:
           - pip
-        script: # Modify the commands below to build your repository.
+        script:
           - pip install -r requirements.txt
           - pytest classification_tool --cov=classification_tool
           - pytest evaluation_tool --cov=evaluation_tool
+          - pytest loading_tool --cov=loading_tool
+          - pytest utils --cov=utils

@@ -7,26 +7,23 @@ import numpy as np
 
 class EvaluationTool():
 
-    def __init__(self, file_path, delimiter, legit=None, agg_key=None):
-        self.stats = None
-        self.labels = None
-        self.keys = None
+    def __init__(self, file_path, delimiter, legit=None, agg=False):
+        self.metadata = None
 
         self.legit = legit
-        self.agg_key = agg_key
-        self.trues, self.preds, self.keys = load_classifications(
+        self.trues, self.preds, self.metadata = load_classifications(
             file_path,
-            delimiter
+            delimiter,
+            agg
         )
-        self.__compute_stats()
 
-    def __compute_stats(self):
+    def compute_stats(self, trues, preds):
         """
         Computes TPs, FPs, TNs and FNs of the given data.
         """
-        self.labels = sorted(set(self.trues) | set(self.preds))
+        labels = sorted(set(trues) | set(preds))
 
-        matrix = confusion_matrix(self.trues, self.preds, labels=self.labels)
+        matrix = confusion_matrix(trues, preds, labels=labels)
         FP = matrix.sum(axis=0) - np.diag(matrix)
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
@@ -34,53 +31,82 @@ class EvaluationTool():
 
         stats = defaultdict(dict)
 
-        for i, label in zip(range(len(self.labels)), self.labels):
+        for i, label in zip(range(len(labels)), labels):
             stats[label]['FP'] = FP[i]
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
             stats[label]['TN'] = TN[i]
 
-        self.stats = stats
+        return stats
 
-    def compute_precision(self, class_label):
+    def filter_data(self, agg_column, agg_key):
+        """
+        Filters data by the aggregation key in the aggregation column.
+        """
+        indexes_by_key = self.metadata.index[
+            self.metadata[agg_column] == agg_key
+        ].tolist()
+
+        trues_by_key = self.trues[indexes_by_key].tolist()
+        preds_by_key = self.preds[indexes_by_key].tolist()
+        return (trues_by_key, preds_by_key)
+
+    def aggregate_stats(self, agg_column, agg_key):
+        """
+        Aggregates statistics by the aggregation key in the aggregation column.
+        """
+        trues, preds = self.filter_data(agg_column, agg_key)
+        stats = self.compute_stats(trues, preds)
+        labels = list(stats.keys())
+
+        for label in labels:
+            if stats[label]['TP'] != 0:
+                stats[label]['TP'] = 1
+                stats[label]['FP'] = 0
+                stats[label]['FN'] = 0
+
+        return stats
+
+    def compute_precision(self, class_label, stats):
         """
         Computes precision for the given class label.
         :param class_label: Class label of the row.
         :return: Computed precision of the classifier for the given class.
         """
-        TP = self.stats[class_label]['TP']
-        FP = self.stats[class_label]['FP']
+        TP = stats[class_label]['TP']
+        FP = stats[class_label]['FP']
 
         if TP + FP == 0:
             return np.nan
         return TP / (TP + FP)
 
-    def compute_recall(self, class_label):
+    def compute_recall(self, class_label, stats):
         """
         Computes recall for the given class label.
         :param class_label: Class label of the row.
         :return: Computed recall of the classifier for the given class.
         """
-        TP = self.stats[class_label]['TP']
-        FN = self.stats[class_label]['FN']
+        TP = stats[class_label]['TP']
+        FN = stats[class_label]['FN']
 
         if TP + FN == 0:
             return np.nan
         return TP / (TP + FN)
 
-    def get_avg_precision(self, legit=True, nan=True):
+    def get_avg_precision(self, labels, stats, legit=True, nan=True):
         """
         Counts the average precision.
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average precision.
         """
-        labels = list(self.labels)
         if not legit:
             labels.remove(self.legit)
 
-        precs = np.fromiter(map(
-            self.compute_precision, labels), dtype=float, count=len(labels)
+        precs = np.fromiter(
+            [self.compute_precision(label, stats) for label in labels],
+            dtype=float,
+            count=len(labels)
         )
 
         if not nan:
@@ -88,19 +114,20 @@ class EvaluationTool():
         else:
             return np.nansum(precs) / len(labels)
 
-    def get_avg_recall(self, legit=True, nan=True):
+    def get_avg_recall(self, labels, stats, legit=True, nan=True):
         """
         Counts the average recall.
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average recall.
         """
-        labels = list(self.labels)
         if not legit:
             labels.remove(self.legit)
 
-        recs = np.fromiter(map(
-            self.compute_recall, labels), dtype=float, count=len(labels)
+        recs = np.fromiter(
+            [self.compute_recall(label, stats) for label in labels],
+            dtype=float,
+            count=len(labels)
         )
 
         if not nan:
