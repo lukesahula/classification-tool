@@ -16,14 +16,13 @@ class EvaluationTool():
             delimiter,
             agg
         )
+        self.labels = sorted(set(self.trues) | set(self.preds))
 
-    def compute_stats(self, trues, preds):
+    def compute_stats(self):
         """
         Computes TPs, FPs, TNs and FNs of the given data.
         """
-        labels = sorted(set(trues) | set(preds))
-
-        matrix = confusion_matrix(trues, preds, labels=labels)
+        matrix = confusion_matrix(self.trues, self.preds, labels=self.labels)
         FP = matrix.sum(axis=0) - np.diag(matrix)
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
@@ -31,7 +30,7 @@ class EvaluationTool():
 
         stats = defaultdict(dict)
 
-        for i, label in zip(range(len(labels)), labels):
+        for i, label in zip(range(len(self.labels)), self.labels):
             stats[label]['FP'] = FP[i]
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
@@ -39,31 +38,34 @@ class EvaluationTool():
 
         return stats
 
-    def filter_data(self, agg_column, agg_key):
+    def compute_aggregated_stats(self, agg_column):
         """
-        Filters data by the aggregation key in the aggregation column.
+        Computes TPs, FPs, and FNs of the given data aggregated by
+        the specified agg_collumn.
         """
-        indexes_by_key = self.metadata.index[
-            self.metadata[agg_column] == agg_key
-        ].tolist()
+        stats = defaultdict(dict)
+        for label in self.labels:
+            stats[label] = {}
+            stats[label]['TP'] = set()
+            stats[label]['FP'] = set()
+            stats[label]['FN'] = set()
 
-        trues_by_key = self.trues[indexes_by_key].tolist()
-        preds_by_key = self.preds[indexes_by_key].tolist()
-        return (trues_by_key, preds_by_key)
+        keys = list(self.metadata[agg_column])
 
-    def aggregate_stats(self, agg_column, agg_key):
-        """
-        Aggregates statistics by the aggregation key in the aggregation column.
-        """
-        trues, preds = self.filter_data(agg_column, agg_key)
-        stats = self.compute_stats(trues, preds)
-        labels = list(stats.keys())
+        for i in range(len(keys)):
+            if self.trues[i] == self.preds[i]:
+                stats[self.trues[i]]['TP'].add(keys[i])
+            else:
+                stats[self.trues[i]]['FN'].add(keys[i])
+                stats[self.preds[i]]['FP'].add(keys[i])
 
-        for label in labels:
-            if stats[label]['TP'] != 0:
-                stats[label]['TP'] = 1
-                stats[label]['FP'] = 0
-                stats[label]['FN'] = 0
+        for label in self.labels:
+            stats[label]['FP'] = stats[label]['FP'] - stats[label]['TP']
+            stats[label]['FN'] = stats[label]['FN'] - stats[label]['TP']
+
+            stats[label]['FP'] = len(stats[label]['FP'])
+            stats[label]['FN'] = len(stats[label]['FN'])
+            stats[label]['TP'] = len(stats[label]['TP'])
 
         return stats
 
@@ -93,13 +95,15 @@ class EvaluationTool():
             return np.nan
         return TP / (TP + FN)
 
-    def get_avg_precision(self, labels, stats, legit=True, nan=True):
+    def get_avg_precision(self, stats, legit=True, nan=True):
         """
         Counts the average precision.
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average precision.
         """
+        labels = self.labels
+
         if not legit:
             labels.remove(self.legit)
 
@@ -114,13 +118,15 @@ class EvaluationTool():
         else:
             return np.nansum(precs) / len(labels)
 
-    def get_avg_recall(self, labels, stats, legit=True, nan=True):
+    def get_avg_recall(self, stats, legit=True, nan=True):
         """
         Counts the average recall.
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average recall.
         """
+        labels = self.labels
+
         if not legit:
             labels.remove(self.legit)
 

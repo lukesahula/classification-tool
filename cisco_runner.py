@@ -69,21 +69,20 @@ class CiscoRunner():
         )
 
         eval_tool = EvaluationTool(predictions_output, ';')
-        stats = eval_tool.compute_stats(eval_tool.trues, eval_tool.preds)
-        labels = list(stats.keys())
+        stats = eval_tool.compute_stats()
         with open(eval_output, 'a', encoding='utf-8') as f:
             tee('Average precision: {}'
-                .format(eval_tool.get_avg_precision(labels, stats)), f)
+                .format(eval_tool.get_avg_precision(stats)), f)
             tee('Average recall: {}'
-                .format(eval_tool.get_avg_recall(labels, stats)), f)
+                .format(eval_tool.get_avg_recall(stats)), f)
             tee('\nPrecisions per label:', f)
 
-            for label in labels:
+            for label in eval_tool.labels:
                 tee('Label: %.1f, precision: %f'
                     %(label, eval_tool.compute_precision(label, stats)), f)
 
             tee('\nRecalls per label:', f)
-            for label in labels:
+            for label in eval_tool.labels:
                 tee('Label: %.1f, recall: %f'
                     %(label, eval_tool.compute_recall(label, stats)), f)
 
