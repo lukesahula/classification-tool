@@ -36,19 +36,14 @@ class EvaluationTool():
             stats[label]['TP'] = TP[i]
             stats[label]['TN'] = TN[i]
 
-        return stats
+        return dict(stats)
 
     def compute_aggregated_stats(self, agg_column):
         """
         Computes TPs, FPs, and FNs of the given data aggregated by
         the specified agg_collumn.
         """
-        stats = defaultdict(dict)
-        for label in self.labels:
-            stats[label] = {}
-            stats[label]['TP'] = set()
-            stats[label]['FP'] = set()
-            stats[label]['FN'] = set()
+        stats = defaultdict(lambda: defaultdict(set))
 
         keys = list(self.metadata[agg_column])
 
@@ -60,18 +55,19 @@ class EvaluationTool():
                 stats[self.preds[i]]['FP'].add(keys[i])
 
         for label in self.labels:
-            stats[label]['FP'] = stats[label]['FP'] - stats[label]['TP']
-            stats[label]['FN'] = stats[label]['FN'] - stats[label]['TP']
+            stats[label]['FP'] -= stats[label]['TP']
+            stats[label]['FN'] -= stats[label]['TP']
 
             stats[label]['FP'] = len(stats[label]['FP'])
             stats[label]['FN'] = len(stats[label]['FN'])
             stats[label]['TP'] = len(stats[label]['TP'])
 
-        return stats
+        return dict(stats)
 
     def compute_precision(self, class_label, stats):
         """
         Computes precision for the given class label.
+        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :param class_label: Class label of the row.
         :return: Computed precision of the classifier for the given class.
         """
@@ -85,6 +81,7 @@ class EvaluationTool():
     def compute_recall(self, class_label, stats):
         """
         Computes recall for the given class label.
+        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :param class_label: Class label of the row.
         :return: Computed recall of the classifier for the given class.
         """
@@ -98,11 +95,12 @@ class EvaluationTool():
     def get_avg_precision(self, stats, legit=True, nan=True):
         """
         Counts the average precision.
+        :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average precision.
         """
-        labels = self.labels
+        labels = list(self.labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -121,11 +119,12 @@ class EvaluationTool():
     def get_avg_recall(self, stats, legit=True, nan=True):
         """
         Counts the average recall.
+        :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
         :return: Average recall.
         """
-        labels = self.labels
+        labels = list(self.labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -140,3 +139,24 @@ class EvaluationTool():
             return np.nanmean(recs)
         else:
             return np.nansum(recs) / len(labels)
+
+    def get_stats_counts(self, labels, stats):
+        """
+        Counts TPS, FPS and FNs for given labels
+        :param stats: Computed statistics (TPs, FPs, FNs for all labels)
+        :return: Dictionary of counts.
+        """
+        counts = {}
+        counts['TP'] = 0
+        counts['FP'] = 0
+        counts['FN'] = 0
+        if not isinstance(labels, list):
+            labels = [labels]
+        for label in labels:
+            counts['TP'] += stats[label]['TP']
+            counts['FP'] += stats[label]['FP']
+            counts['FN'] += stats[label]['FN']
+
+        return counts
+
+

@@ -22,13 +22,9 @@ class LoadingTool():
         1st element is a series of labels.
         """
 
-        # Load negative records first.
+        # Load and sample negative records first.
         files = glob.glob(os.path.join(path, 'neg', '*.gz'))
-        data = pd.concat(pd.read_csv(f, sep='\t', header=None) for f in files)
-
-        # Sample negative records.
-        sampled_indices = self.sample_indices(list(data.index.values))
-        data = data.iloc[sampled_indices]
+        data = self.sample_negatives(files)
 
         # Read positive records and concatenate with sampled negatives.
         files = glob.glob(os.path.join(path, 'pos', '*.gz'))
@@ -55,14 +51,33 @@ class LoadingTool():
 
         return (data, labels, metadata)
 
-    def sample_indices(self, indices):
+    def sample_negatives(self, files):
+        """
+        Creates a random sample of negative records from given files.
+        :param files: Negative gzipped files.
+        :return: Dataframe of sampled negatives.
+        """
+        data = pd.DataFrame()
+        samples_per_part = self.neg_samples // len(files)
+        for file in files:
+            unsampled = pd.read_csv(file, sep='\t', header=None)
+            sampled_indices = self.sample_indices(
+                list(unsampled.index.values),
+                samples_per_part
+            )
+            sampled = unsampled.iloc[sampled_indices]
+            data = pd.concat([data, sampled])
+        return data
+
+
+    def sample_indices(self, indices, samples_count):
         """
         Creates a random sample of the datasets indices
         :param indices: A list of indices.
         :return: A list of sampled indices.
         """
         random.seed(self.seed)
-        return random.sample(indices, self.neg_samples)
+        return random.sample(indices, samples_count)
 
 
     def compute_bins(self, dataset):

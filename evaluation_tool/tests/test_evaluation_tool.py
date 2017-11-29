@@ -130,6 +130,7 @@ class TestEvaluationTool(object):
         stats = eval_tool.compute_stats()
 
         prec = eval_tool.get_avg_precision(stats, legit=False)
+        eval_tool.labels.remove(0)
         prec_avg_sklearn = precision_score(
             y_true=eval_tool.trues,
             y_pred=eval_tool.preds,
@@ -145,6 +146,7 @@ class TestEvaluationTool(object):
         stats = eval_tool.compute_stats()
 
         rec = eval_tool.get_avg_recall(stats=stats, legit=False)
+        eval_tool.labels.remove(0)
         rec_avg_sklearn = recall_score(
             y_true=eval_tool.trues,
             y_pred=eval_tool.preds,
@@ -211,7 +213,6 @@ class TestEvaluationTool(object):
 
         assert eval_tool.metadata.equals(expected)
 
-
     def test_compute_aggregated_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
         eval_tool = EvaluationTool(file_path, ';', agg=True)
@@ -235,3 +236,15 @@ class TestEvaluationTool(object):
             }
         }
         assert aggregated_stats == expected_stats
+
+    def test_get_stats_counts(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
+        eval_tool = EvaluationTool(file_path, ';', agg=True)
+        aggregated_stats = eval_tool.compute_aggregated_stats('user')
+        expected_counts = {
+            'TP': 4,
+            'FP': 3,
+            'FN': 3
+        }
+        counts = eval_tool.get_stats_counts(eval_tool.labels, aggregated_stats)
+        assert expected_counts == counts

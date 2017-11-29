@@ -61,3 +61,5 @@ class ClassificationTool():
                     self.t_data[2][2]
                 )
             )
+
+        self.t_data = None

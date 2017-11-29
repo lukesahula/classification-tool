@@ -3,11 +3,12 @@ from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.externals import joblib
 
 
 class CiscoRunner():
 
-    def execute_run(self):
+    def execute_run(self, clas_path=None):
         cisco_training = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
@@ -16,6 +17,8 @@ class CiscoRunner():
         )
 
         eval_output = 'evaluation_tool/outputs/rfc.cisco'
+        predictions_output = 'classification_tool/outputs/rfc.cisco'
+        clsfr_output = 'classification_tool/outputs/rfc.cisco.clsfr'
 
         n_estimators = 100
         max_features = 'sqrt'
@@ -50,41 +53,59 @@ class CiscoRunner():
                 .format(str(sampling_settings['bin_count'])), f)
             tee('Seed: {}\n'.format(random_state), f)
 
+        if not clas_path:
+            rfc = RFC(
+                n_estimators=n_estimators,
+                max_features=max_features,
+                min_samples_split=min_samples_split,
+                criterion=criterion,
+                n_jobs=n_jobs,
+                random_state=random_state
+            )
+            loading_tool = LoadingTool(sampling_settings)
+            clas_tool = ClassificationTool(rfc, loading_tool)
+            clas_tool.train_classifier(cisco_training)
+        else:
+            clas_tool = joblib.load(clas_path)
 
-        rfc = RFC(
-            n_estimators=n_estimators,
-            max_features=max_features,
-            min_samples_split=min_samples_split,
-            criterion=criterion,
-            n_jobs=n_jobs,
-            random_state=random_state
-        )
-        loading_tool = LoadingTool(sampling_settings)
-        clas_tool = ClassificationTool(rfc, loading_tool)
-        clas_tool.train_classifier(cisco_training)
-        predictions_output = 'classification_tool/outputs/rfc.cisco'
         clas_tool.save_predictions(
             cisco_testing,
             predictions_output,
         )
 
-        eval_tool = EvaluationTool(predictions_output, ';')
+        eval_tool = EvaluationTool(predictions_output, ';', legit=0, agg=True)
         stats = eval_tool.compute_stats()
+        counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
         with open(eval_output, 'a', encoding='utf-8') as f:
-            tee('Average precision: {}'
+            tee('Avg Stats:\n', f)
+            tee('Average precision w/o legit & NaN: {}'
+                .format(eval_tool.get_avg_precision(stats, False, False)), f)
+            tee('Average precision w/o legit: {}'
+                .format(eval_tool.get_avg_precision(stats, False, True)), f)
+            tee('Average recall w/o legit: {}'
+                .format(eval_tool.get_avg_recall(stats, False, True)), f)
+            tee('\nAverage precision w/o NaN: {}'
+                .format(eval_tool.get_avg_precision(stats, True, False)), f)
+            tee('Average overall precision: {}'
                 .format(eval_tool.get_avg_precision(stats)), f)
-            tee('Average recall: {}'
+            tee('Average overall recall: {}'
                 .format(eval_tool.get_avg_recall(stats)), f)
-            tee('\nPrecisions per label:', f)
+            tee('\nOverall stats:\n', f)
+            tee('TPS: {}'.format(counts['TP']), f)
+            tee('FPS: {}'.format(counts['FP']), f)
+            tee('FNS: {}'.format(counts['FN']), f)
 
+            tee('Individual stats:\n', f)
+            tee('label\tprecis\t\trecall\t\t\ttps\t\t\tfps\t\t\tfns', f)
             for label in eval_tool.labels:
-                tee('Label: %.1f, precision: %f'
-                    %(label, eval_tool.compute_precision(label, stats)), f)
+                counts = eval_tool.get_stats_counts(label, stats)
+                tee('%3.0f\t\t%4.3f\t\t%4.3f\t\t%6.0f\t\t%6.0f\t\t%6.0f'
+                    %(label, eval_tool.compute_precision(label, stats),
+                      eval_tool.compute_recall(label, stats),
+                      counts['TP'], counts['FP'], counts['FN']), f)
 
-            tee('\nRecalls per label:', f)
-            for label in eval_tool.labels:
-                tee('Label: %.1f, recall: %f'
-                    %(label, eval_tool.compute_recall(label, stats)), f)
+        joblib.dump(clas_tool, clsfr_output, compress=9)
 
 runner = CiscoRunner()
+#runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
 runner.execute_run()
