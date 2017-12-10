@@ -1,3 +1,5 @@
+import os
+
 from utils.utils import tee
 from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
@@ -70,7 +72,7 @@ class CiscoRunner():
             )
             loading_tool = LoadingTool(sampling_settings)
             clas_tool = ClassificationTool(rfc)
-            tr_data = loading_tool.load_cisco_dataset(tr_path)
+            tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
             clas_tool.train_classifier(tr_data)
             tr_data = None
@@ -79,12 +81,15 @@ class CiscoRunner():
             loading_tool = LoadingTool(sampling_settings, ser_classifier.bins)
             clas_tool = ClassificationTool(ser_classifier.classifier)
 
-        t_data = loading_tool.load_cisco_dataset(t_path)
-        t_data = loading_tool.quantize_data(t_data)
-        clas_tool.save_predictions(
-            t_data,
-            predictions_output,
-        )
+        if os.path.isfile(predictions_output):
+            os.remove(predictions_output)
+
+        for t_data in loading_tool.load_testing_data(t_path):
+            t_data = loading_tool.quantize_data(t_data)
+            clas_tool.save_predictions(
+                t_data,
+                predictions_output,
+            )
         t_data = None
 
         eval_tool = EvaluationTool(predictions_output, ';', legit=0, agg=True)

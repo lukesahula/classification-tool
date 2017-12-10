@@ -22,7 +22,7 @@ class TestClassificationTool(object):
         }
         loading_tool = LoadingTool(sampling_settings)
         clas_tool = ClassificationTool(rfc)
-        tr_data = loading_tool.load_cisco_dataset(tr_path)
+        tr_data = loading_tool.load_training_data(tr_path)
         tr_data = loading_tool.quantize_data(tr_data)
         clas_tool.train_classifier(tr_data)
         tr_data = None
@@ -41,15 +41,17 @@ class TestClassificationTool(object):
         }
         loading_tool = LoadingTool(sampling_settings)
         clas_tool = ClassificationTool(rfc)
-        tr_data = loading_tool.load_cisco_dataset(tr_path)
+        tr_data = loading_tool.load_training_data(tr_path)
         tr_data = loading_tool.quantize_data(tr_data)
         clas_tool.train_classifier(tr_data)
         tr_data = None
 
         output_file = os.path.join(ROOT_DIR, 'outputs/rfc.test')
-        t_data = loading_tool.load_cisco_dataset(t_path)
-        t_data = loading_tool.quantize_data(t_data)
-        clas_tool.save_predictions(t_data, output_file)
+
+        for t_data in loading_tool.load_testing_data(t_path):
+            t_data = loading_tool.quantize_data(t_data)
+            clas_tool.save_predictions(t_data, output_file)
+
         t_data = None
 
         assert os.path.isfile(output_file)

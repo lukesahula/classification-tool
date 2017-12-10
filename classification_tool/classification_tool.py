@@ -19,6 +19,7 @@ class ClassificationTool():
         :param t_data: Testing data in a tuple (features, labels, metadata)
         Features are a pd.DataFrame, labels a list, metadata a pd.DataFrame
         :param output_file: Path to output file.
+        :param write_mode: Mode for writing into the output file. 'w' or 'a'
         """
         def chunks(dataframe, n):
             """
@@ -28,7 +29,7 @@ class ClassificationTool():
                 yield dataframe[i:i + n]
 
 
-        with open(output_file, 'w', encoding='utf-8', newline='') as file:
+        with open(output_file, 'a', encoding='utf-8', newline='') as file:
             writer = csv.writer(file, delimiter=';')
 
             preds = []

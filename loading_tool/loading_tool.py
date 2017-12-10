@@ -14,7 +14,7 @@ class LoadingTool():
         self.neg_samples = sampling_settings['neg_samples']
         self.seed = sampling_settings['seed']
 
-    def load_cisco_dataset(self, path):
+    def load_training_data(self, path):
         """
         Reads cisco specific gzipped files at given path.
         :param path: Path to the gzipped files
@@ -49,7 +49,34 @@ class LoadingTool():
         labels.reset_index(drop=True, inplace=True)
         data.reset_index(drop=True, inplace=True)
 
-        return (data, labels, metadata)
+        return data, labels, metadata
+
+    def load_testing_data(self, path):
+        """
+        Reads cisco specific gzipped files at given path.
+        :param path: Path to the gzipped files
+        :return: A tuple where 0th element is a dataframe of features and
+        1st element is a series of labels.
+        """
+
+        files = glob.glob(os.path.join(path, 'neg', '*.gz'))
+        files += glob.glob(os.path.join(path, 'pos', '*.gz'))
+        for f in files:
+            data = pd.read_csv(f, sep='\t', header=None)
+
+            # Replace nans
+            data.replace(
+                to_replace=np.nan,
+                value=-1000000,
+                inplace=True
+            )
+
+            metadata = data[data.columns[:3]]
+            labels = data[data.columns[3]]
+            data = data[data.columns[4:]]
+            data.rename(columns=lambda x: x-4, inplace=True)
+
+            yield data, labels, metadata
 
     def sample_negatives(self, files):
         """
@@ -113,7 +140,7 @@ class LoadingTool():
         """
         Performs data quantization over all feature columns.
         :param dataset: A tuple with data (features, labels, metadata)
-        Features are a pd.DataFrame, labels a list, metadata a pd.DataFrame
+        Features are a pd.DataFrame, labels a series, metadata a pd.DataFrame
         :return: A tuple with quantized features (features, labels, metadata)
         """
         if not self.bins:
@@ -128,7 +155,7 @@ class LoadingTool():
                 else self.bins[column][i-1] for i in digitized_list
             ]
 
-        return (quantized_frame, dataset[1], dataset[2])
+        return quantized_frame, dataset[1], dataset[2]
 
 def load_classifications(file_path, delimiter, metadata=False):
     """
@@ -153,4 +180,4 @@ def load_classifications(file_path, delimiter, metadata=False):
             file_path, delimiter, header=None, names=columns, usecols=[2, 3, 4]
         )
 
-    return (trues, preds, df)
+    return trues, preds, df

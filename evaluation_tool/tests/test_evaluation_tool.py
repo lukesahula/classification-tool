@@ -248,3 +248,15 @@ class TestEvaluationTool(object):
         }
         counts = eval_tool.get_stats_counts(eval_tool.labels, aggregated_stats)
         assert expected_counts == counts
+
+    def test_get_stats_counts_one_label(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_one_label')
+        eval_tool = EvaluationTool(file_path, ';', agg=True)
+        aggregated_stats = eval_tool.compute_aggregated_stats('user')
+        expected_counts = {
+            'TP': 1,
+            'FP': 0,
+            'FN': 0
+        }
+        counts = eval_tool.get_stats_counts(1, aggregated_stats)
+        assert expected_counts == counts

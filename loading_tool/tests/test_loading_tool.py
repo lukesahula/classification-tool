@@ -8,7 +8,7 @@ DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets'))
 
 class TestLoadingTool(object):
 
-    def test_load_cisco_dataset(self):
+    def test_load_testing_data(self):
         path = DATA_DIR
         sampling_settings = {
             'bin_count': 16,
@@ -17,7 +17,63 @@ class TestLoadingTool(object):
             'seed': 0
         }
         loading_tool = LoadingTool(sampling_settings)
-        result = loading_tool.load_cisco_dataset(path)
+        result = []
+        for chunk in loading_tool.load_testing_data(path):
+            result.append(chunk)
+
+        result = (
+            pd.concat([result[0][0], result[1][0]]),
+            pd.concat([result[0][1], result[1][1]]),
+            pd.concat([result[0][2], result[1][2]])
+        )
+
+        data = result[0]
+        labels = result[1]
+        metadata = result[2]
+
+        data.reset_index(drop=True, inplace=True)
+        labels.reset_index(drop=True, inplace=True)
+        metadata.reset_index(drop=True, inplace=True)
+
+        result = data, labels, metadata
+
+        expected_labels = [0, 0, 0, 1, 2, 3]
+        expected_features = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [2, 2, 2, 2],
+            [3, 3, 3, 3]
+        ]
+        expected_metadata = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3]
+        ]
+        expected = (
+            pd.DataFrame(expected_features),
+            pd.Series(expected_labels),
+            pd.DataFrame(expected_metadata)
+        )
+        assert (expected[0].equals(result[0])
+                and expected[1].equals(result[1])
+                and expected[2].equals(result[2]))
+
+
+    def test_load_training_data(self):
+        path = DATA_DIR
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 2,
+            'bin_samples': 2,
+            'seed': 0
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        result = loading_tool.load_training_data(path)
         expected_labels = [0, 0, 1, 2, 3]
         expected_features = [
             [0, 0, 0, 0],
