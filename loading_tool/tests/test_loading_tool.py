@@ -51,7 +51,7 @@ class TestLoadingTool(object):
         }
         loading_tool = LoadingTool(sampling_settings)
         indices = list(range(40))
-        sampled_indices = loading_tool.sample_indices(indices)
+        sampled_indices = loading_tool.sample_indices(indices, 10)
         expected = [24, 26, 2, 16, 32, 31, 25, 19, 30, 11]
 
         assert sampled_indices == expected
