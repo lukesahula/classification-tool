@@ -6,9 +6,9 @@ import random
 
 class LoadingTool():
 
-    def __init__(self, sampling_settings):
+    def __init__(self, sampling_settings, bins=None):
 
-        self.bins = None
+        self.bins = bins
         self.bin_count = sampling_settings['bin_count']
         self.bin_samples = sampling_settings['bin_samples']
         self.neg_samples = sampling_settings['neg_samples']
@@ -112,22 +112,23 @@ class LoadingTool():
     def quantize_data(self, dataset):
         """
         Performs data quantization over all feature columns.
-        :param dataset: Pandas dataframe with feature vectors
-        :return: Pandas dataframe with quantized feature vectors
+        :param dataset: A tuple with data (features, labels, metadata)
+        Features are a pd.DataFrame, labels a list, metadata a pd.DataFrame
+        :return: A tuple with quantized features (features, labels, metadata)
         """
         if not self.bins:
-            self.bins = self.compute_bins(dataset)
+            self.bins = self.compute_bins(dataset[0])
 
         quantized_frame = pd.DataFrame()
 
-        for column in dataset.columns:
-            digitized_list = np.digitize(dataset[column], self.bins[column])
+        for column in dataset[0].columns:
+            digitized_list = np.digitize(dataset[0][column], self.bins[column])
             quantized_frame[column] = [
                 self.bins[column][i] if i < len(self.bins[column])
                 else self.bins[column][i-1] for i in digitized_list
             ]
 
-        return quantized_frame
+        return (quantized_frame, dataset[1], dataset[2])
 
 def load_classifications(file_path, delimiter, metadata=False):
     """

@@ -9,10 +9,10 @@ from sklearn.externals import joblib
 class CiscoRunner():
 
     def execute_run(self, clas_path=None):
-        cisco_training = (
+        tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
-        cisco_testing = (
+        t_path = (
             'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
@@ -63,16 +63,22 @@ class CiscoRunner():
                 random_state=random_state
             )
             loading_tool = LoadingTool(sampling_settings)
-            clas_tool = ClassificationTool(rfc, loading_tool)
-            clas_tool.train_classifier(cisco_training)
+            clas_tool = ClassificationTool(rfc)
+            tr_data = loading_tool.load_cisco_dataset(tr_path)
+            tr_data = loading_tool.quantize_data(tr_data)
+            clas_tool.train_classifier(tr_data)
+            tr_data = None
         else:
             clas_tool = joblib.load(clas_path)
 
+        t_data = loading_tool.load_cisco_dataset(t_path)
+        t_data = loading_tool.quantize_data(t_data)
         clas_tool.save_predictions(
-            cisco_testing,
+            t_data,
             predictions_output,
         )
 
+        t_data = None
         eval_tool = EvaluationTool(predictions_output, ';', legit=0, agg=True)
         stats = eval_tool.compute_stats()
         counts = eval_tool.get_stats_counts(eval_tool.labels, stats)

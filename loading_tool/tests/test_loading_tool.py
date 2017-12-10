@@ -89,7 +89,7 @@ class TestLoadingTool(object):
         dataset.loc[-1] = [11, 19, 14, 10]
         dataset.index = dataset.index + 1
         dataset = dataset.sort_index()
-        dataset = loading_tool.quantize_data(dataset)
+        dataset = loading_tool.quantize_data((dataset, None, None))
 
         expected = pd.DataFrame([
             [11.25, 19.375, 14.375, 10],
@@ -97,7 +97,7 @@ class TestLoadingTool(object):
             [15.625, 15.625, 15.625, 10],
             [20.0, 20.0, 20.0, 10]
         ])
-        assert expected.equals(dataset)
+        assert expected.equals(dataset[0])
 
     def test_quantize_data_unbinned(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
@@ -109,14 +109,14 @@ class TestLoadingTool(object):
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)
-        dataset = loading_tool.quantize_data(dataset)
+        dataset = loading_tool.quantize_data((dataset, None, None))
 
         expected = pd.DataFrame([
             [10.625, 10.625, 10.625, 10],
             [15.625, 15.625, 15.625, 10],
             [20.0, 20.0, 20.0, 10]
         ])
-        assert expected.equals(dataset)
+        assert expected.equals(dataset[0])
 
     def test_load_classifications(self):
         path = os.path.join(DATA_DIR, 'test_classifications')
