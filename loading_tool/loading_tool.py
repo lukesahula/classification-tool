@@ -132,7 +132,8 @@ class LoadingTool():
 
 def load_classifications(file_path, delimiter, metadata=False):
     """
-    Reads true/pred data from a file and saves it to dataframes. Optionally reads also metadata into a pandas dataframe.
+    Reads true/pred data from a file and saves it to dataframes.
+    Optionally reads also metadata into a pandas dataframe.
     :param file_path: Path to the file
     :param delimiter: Symbol or a string by which the data is delimited.
     :param metadata: Whether to read metadata as well.

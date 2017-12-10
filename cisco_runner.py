@@ -5,6 +5,11 @@ from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
 
+class SerializableClassifier():
+    def __init__(self, classifier, bins=None):
+        self.classifier = classifier
+        self.bins = bins
+
 
 class CiscoRunner():
 
@@ -20,6 +25,7 @@ class CiscoRunner():
         predictions_output = 'classification_tool/outputs/rfc.cisco'
         clsfr_output = 'classification_tool/outputs/rfc.cisco.clsfr'
 
+        # Configuration for the RFC
         n_estimators = 100
         max_features = 'sqrt'
         min_samples_split = 2
@@ -69,7 +75,9 @@ class CiscoRunner():
             clas_tool.train_classifier(tr_data)
             tr_data = None
         else:
-            clas_tool = joblib.load(clas_path)
+            ser_classifier = joblib.load(clas_path)
+            loading_tool = LoadingTool(sampling_settings, ser_classifier.bins)
+            clas_tool = ClassificationTool(ser_classifier.classifier)
 
         t_data = loading_tool.load_cisco_dataset(t_path)
         t_data = loading_tool.quantize_data(t_data)
@@ -77,8 +85,8 @@ class CiscoRunner():
             t_data,
             predictions_output,
         )
-
         t_data = None
+
         eval_tool = EvaluationTool(predictions_output, ';', legit=0, agg=True)
         stats = eval_tool.compute_stats()
         counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
@@ -110,7 +118,12 @@ class CiscoRunner():
                       eval_tool.compute_recall(label, stats),
                       counts['TP'], counts['FP'], counts['FN']), f)
 
-        joblib.dump(clas_tool, clsfr_output, compress=9)
+        ser_classifier = SerializableClassifier(
+            clas_tool.classifier,
+            loading_tool.bins
+        )
+
+        joblib.dump(ser_classifier, clsfr_output, compress=9)
 
 runner = CiscoRunner()
 #runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
