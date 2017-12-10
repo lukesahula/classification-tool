@@ -157,27 +157,25 @@ class LoadingTool():
 
         return quantized_frame, dataset[1], dataset[2]
 
-def load_classifications(file_path, delimiter, metadata=False):
-    """
-    Reads true/pred data from a file and saves it to dataframes.
-    Optionally reads also metadata into a pandas dataframe.
-    :param file_path: Path to the file
-    :param delimiter: Symbol or a string by which the data is delimited.
-    :param metadata: Whether to read metadata as well.
-    """
-    columns = ['true', 'pred']
-    df = pd.read_csv(
-        file_path, delimiter, header=None, names=columns, usecols=[0, 1]
-    )
-    trues = df['true']
-    preds = df['pred']
-
-    df = None
-
-    if metadata:
-        columns = ['timestamp', 'user', 'flow']
-        df = pd.read_csv(
-            file_path, delimiter, header=None, names=columns, usecols=[2, 3, 4]
+    def load_classifications(self, file_path, delimiter):
+        """
+        Reads true/pred data from a file and saves it to dataframes.
+        Optionally reads also metadata into a pandas dataframe.
+        :param file_path: Path to the file
+        :param delimiter: Symbol or a string by which the data is delimited.
+        :param metadata: Whether to read metadata as well.
+        """
+        columns = ['true', 'pred', 'timestamp', 'user', 'flow']
+        reader = pd.read_csv(
+            file_path,
+            delimiter,
+            header=None,
+            names=columns,
+            chunksize=500000
         )
 
-    return trues, preds, df
+        for record in reader:
+            trues = record['true']
+            preds = record['pred']
+            metadata = pd.concat([record['timestamp'], record['user'], record['flow']])
+            yield trues, preds, metadata

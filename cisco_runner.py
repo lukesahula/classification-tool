@@ -1,11 +1,15 @@
 import os
 
+import datetime
+
 from utils.utils import tee
 from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
+from collections import defaultdict
+
 
 class SerializableClassifier():
     def __init__(self, classifier, bins=None):
@@ -15,6 +19,61 @@ class SerializableClassifier():
 
 class CiscoRunner():
 
+    def execute_eval(self, predictions_dir):
+        predictions = os.path.join(predictions_dir, 'clas')
+        eval_output = os.path.join(predictions_dir, 'eval_new')
+        eval_tool = EvaluationTool(legit=0, agg=True)
+        n_estimators = 100
+        max_features = 'sqrt'
+        min_samples_split = 2
+        criterion = 'entropy'
+        n_jobs = -1
+        random_state = 0
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 10000,
+            'bin_samples': 5000,
+            'seed': random_state
+        }
+        stats = defaultdict(lambda: defaultdict(int))
+        loading_tool = LoadingTool(sampling_settings)
+        for chunk in loading_tool.load_classifications(predictions, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
+        counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
+        with open(eval_output, 'a', encoding='utf-8') as f:
+            tee('Avg Stats:\n', f)
+            tee('Average precision w/o legit & NaN: {}'
+                .format(eval_tool.get_avg_precision(stats, False, False)), f)
+            tee('Average precision w/o legit: {}'
+                .format(eval_tool.get_avg_precision(stats, False, True)), f)
+            tee('Average recall w/o legit: {}'
+                .format(eval_tool.get_avg_recall(stats, False, True)), f)
+            tee('\nAverage precision w/o NaN: {}'
+                .format(eval_tool.get_avg_precision(stats, True, False)), f)
+            tee('Average overall precision: {}'
+                .format(eval_tool.get_avg_precision(stats)), f)
+            tee('Average overall recall: {}'
+                .format(eval_tool.get_avg_recall(stats)), f)
+            tee('\nOverall stats:\n', f)
+            tee('TPS: {}'.format(counts['TP']), f)
+            tee('FPS: {}'.format(counts['FP']), f)
+            tee('FNS: {}'.format(counts['FN']), f)
+
+            tee('Individual stats:\n', f)
+            tee('label\tprecis\t\trecall\t\t\ttps\t\t\tfps\t\t\tfns', f)
+            for label in eval_tool.labels:
+                counts = eval_tool.get_stats_counts(label, stats)
+                tee('%3.0f\t\t%4.3f\t\t%4.3f\t\t%6.0f\t\t%6.0f\t\t%6.0f'
+                    %(label, eval_tool.compute_precision(label, stats),
+                      eval_tool.compute_recall(label, stats),
+                      counts['TP'], counts['FP'], counts['FN']), f)
+        
+
     def execute_run(self, clas_path=None):
         tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
@@ -23,9 +82,12 @@ class CiscoRunner():
             'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
-        eval_output = 'evaluation_tool/outputs/rfc.cisco'
-        predictions_output = 'classification_tool/outputs/rfc.cisco'
-        clsfr_output = 'classification_tool/outputs/rfc.cisco.clsfr'
+        output_dir = datetime.datetime.now().isoformat()
+        output_dir = os.path.join('runner_outputs', output_dir)
+        os.makedirs(output_dir)
+        eval_output = os.path.join(output_dir, 'eval')
+        predictions_output = os.path.join(output_dir, 'clas')
+        clsfr_output = os.path.join(output_dir, 'clsfr')
 
         # Configuration for the RFC
         n_estimators = 100
@@ -92,8 +154,11 @@ class CiscoRunner():
             )
         t_data = None
 
-        eval_tool = EvaluationTool(predictions_output, ';', legit=0, agg=True)
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool(legit=0, agg=True)
+        stats = dict()
+        for chunk in loading_tool.load_classifications(predictions_output, ';'):
+            stats.update(eval_tool.compute_stats(chunk))
+
         counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
         with open(eval_output, 'a', encoding='utf-8') as f:
             tee('Avg Stats:\n', f)
@@ -132,4 +197,5 @@ class CiscoRunner():
 
 runner = CiscoRunner()
 #runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
-runner.execute_run()
+#runner.execute_run()
+runner.execute_eval('runner_outputs/2017-12-21T09:37:10.764747')

@@ -1,28 +1,28 @@
 from collections import defaultdict
 
 from sklearn.metrics import confusion_matrix
-from loading_tool.loading_tool import load_classifications
 
 import numpy as np
 
 class EvaluationTool():
 
-    def __init__(self, file_path, delimiter, legit=None, agg=False):
-        self.metadata = None
-
+    def __init__(self, legit=None, agg=False):
         self.legit = legit
-        self.trues, self.preds, self.metadata = load_classifications(
-            file_path,
-            delimiter,
-            agg
-        )
-        self.labels = sorted(set(self.trues) | set(self.preds))
+        self.labels = []
 
-    def compute_stats(self):
+
+    def compute_stats(self, data_chunk):
         """
         Computes TPs, FPs, TNs and FNs of the given data.
         """
-        matrix = confusion_matrix(self.trues, self.preds, labels=self.labels)
+        trues = data_chunk[0]
+        preds = data_chunk[1]
+        labels = sorted(set(trues) | set(preds))
+
+        #TODO Smelly
+        self.labels = sorted(set(labels) | set(self.labels))
+
+        matrix = confusion_matrix(trues, preds, labels=labels)
         FP = matrix.sum(axis=0) - np.diag(matrix)
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
@@ -30,7 +30,7 @@ class EvaluationTool():
 
         stats = defaultdict(dict)
 
-        for i, label in zip(range(len(self.labels)), self.labels):
+        for i, label in zip(range(len(labels)), labels):
             stats[label]['FP'] = FP[i]
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
@@ -38,23 +38,32 @@ class EvaluationTool():
 
         return dict(stats)
 
-    def compute_aggregated_stats(self, agg_column):
+    def compute_aggregated_stats(self, agg_column, data_chunk):
         """
         Computes TPs, FPs, and FNs of the given data aggregated by
         the specified agg_collumn.
         """
+
         stats = defaultdict(lambda: defaultdict(set))
 
-        keys = list(self.metadata[agg_column])
+        trues = data_chunk[0]
+        preds = data_chunk[1]
+        metadata = data_chunk[2]
+
+        labels = sorted(set(trues) | set(preds))
+        keys = list(metadata[agg_column])
+
+        #TODO Smelly
+        self.labels = sorted(set(labels) | set(self.labels))
 
         for i in range(len(keys)):
-            if self.trues[i] == self.preds[i]:
-                stats[self.trues[i]]['TP'].add(keys[i])
+            if trues[i] == preds[i]:
+                stats[trues[i]]['TP'].add(keys[i])
             else:
-                stats[self.trues[i]]['FN'].add(keys[i])
-                stats[self.preds[i]]['FP'].add(keys[i])
+                stats[trues[i]]['FN'].add(keys[i])
+                stats[preds[i]]['FP'].add(keys[i])
 
-        for label in self.labels:
+        for label in labels:
             stats[label]['FP'] -= stats[label]['TP']
             stats[label]['FN'] -= stats[label]['TP']
 
