@@ -6,17 +6,19 @@ import random
 
 class LoadingTool():
 
-    def __init__(self, sampling_settings, bins=None):
+    def __init__(self, sampling_settings=None, bins=None):
 
         self.bins = bins
-        self.bin_count = sampling_settings['bin_count']
-        self.bin_samples = sampling_settings['bin_samples']
-        self.neg_samples = sampling_settings['neg_samples']
-        self.seed = sampling_settings['seed']
+        if sampling_settings:
+            self.bin_count = sampling_settings['bin_count']
+            self.bin_samples = sampling_settings['bin_samples']
+            self.neg_samples = sampling_settings['neg_samples']
+            self.seed = sampling_settings['seed']
 
     def load_training_data(self, path):
         """
-        Reads cisco specific gzipped files at given path.
+        Reads cisco specific gzipped files at given path and samples the
+        negatives.
         :param path: Path to the gzipped files
         :return: A tuple where 0th element is a dataframe of features and
         1st element is a series of labels.
@@ -53,7 +55,8 @@ class LoadingTool():
 
     def load_testing_data(self, path):
         """
-        Reads cisco specific gzipped files at given path.
+        Reads cisco specific gzipped files at given path without sampling
+        the negatives, yielding the data one file at a time.
         :param path: Path to the gzipped files
         :return: A tuple where 0th element is a dataframe of features and
         1st element is a series of labels.
@@ -157,15 +160,19 @@ class LoadingTool():
 
         return quantized_frame, dataset[1], dataset[2]
 
-    def load_classifications(self, file_path, delimiter):
+    def load_classifications(self, file_path, delimiter, read_metadata=False):
         """
         Reads true/pred data from a file and saves it to dataframes.
-        Optionally reads also metadata into a pandas dataframe.
+        Optionally also reads metadata into a pandas dataframe.
         :param file_path: Path to the file
         :param delimiter: Symbol or a string by which the data is delimited.
-        :param metadata: Whether to read metadata as well.
+        :param read_metadata: Whether to read metadata as well.
         """
-        columns = ['true', 'pred', 'timestamp', 'user', 'flow']
+        columns = ['true', 'pred']
+        if read_metadata:
+            metadata_columns = ['timestamp', 'user', 'flow']
+            columns.extend(metadata_columns)
+
         reader = pd.read_csv(
             file_path,
             delimiter,
@@ -177,5 +184,13 @@ class LoadingTool():
         for record in reader:
             trues = record['true']
             preds = record['pred']
-            metadata = pd.concat([record['timestamp'], record['user'], record['flow']])
-            yield trues, preds, metadata
+            data_tuple = trues, preds
+            if read_metadata:
+                metadata = pd.DataFrame(
+                    data=np.array(
+                        [record['timestamp'], record['user'], record['flow']])
+                        .transpose(),
+                    columns=metadata_columns
+                )
+                data_tuple = trues, preds, metadata
+            yield data_tuple

@@ -19,7 +19,6 @@ class ClassificationTool():
         :param t_data: Testing data in a tuple (features, labels, metadata)
         Features are a pd.DataFrame, labels a list, metadata a pd.DataFrame
         :param output_file: Path to output file.
-        :param write_mode: Mode for writing into the output file. 'w' or 'a'
         """
         def chunks(dataframe, n):
             """

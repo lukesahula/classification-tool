@@ -176,9 +176,14 @@ class TestLoadingTool(object):
 
     def test_load_classifications(self):
         path = os.path.join(DATA_DIR, 'test_classifications')
+        load_tool = LoadingTool()
         delim = ';'
-        result = load_classifications(path, delim)
-        result = (list(result[0]), list(result[1]))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(path, delim):
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+        result = (list(trues), list(preds))
         expected = (
             [10, 10, 5, 4, 4, 4, 10, 8, 10, 9],
             [10, 9, 5, 4, 9, 8, 8, 8, 10, 9],
@@ -188,8 +193,10 @@ class TestLoadingTool(object):
     def test_load_classifications_keys(self):
         path = os.path.join(DATA_DIR, 'test_classifications_keys')
         delim = ';'
-        result = load_classifications(path, delim, metadata=True)
-        result = result[2]
+        load_tool = LoadingTool()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(path, delim, True):
+            metadata = metadata.append(chunk[2])
 
         expected = pd.DataFrame(
             np.array([
@@ -199,5 +206,5 @@ class TestLoadingTool(object):
             ]).transpose(),
             columns=['timestamp', 'user', 'flow']
         )
-        assert result.equals(expected)
+        assert metadata.equals(expected)
 

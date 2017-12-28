@@ -10,6 +10,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
 from evaluation_tool.evaluation_tool import EvaluationTool
+from loading_tool.loading_tool import LoadingTool
 
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 
@@ -18,42 +19,49 @@ class TestEvaluationTool(object):
 
     def test_compute_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';')
-        result = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        result = defaultdict(lambda: defaultdict(int))
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            for label in chunk_stats:
+                result[label]['FP'] += chunk_stats[label]['FP']
+                result[label]['FN'] += chunk_stats[label]['FN']
+                result[label]['TP'] += chunk_stats[label]['TP']
 
-        expected = {
-            0: {
-                'TP' : 1,
-                'TN' : 8,
-                'FP' : 2,
-                'FN' : 4
-            },
-            1: {
-                'TP': 5,
-                'TN': 5,
-                'FP': 3,
-                'FN': 2
-            },
-            2: {
-                'TP': 1,
-                'TN': 9,
-                'FP': 3,
-                'FN': 2
-            }
-        }
-
+        expected = defaultdict(lambda: defaultdict(int))
+        expected[0]['TP'] = 1
+        expected[0]['FP'] = 2
+        expected[0]['FN'] = 4
+        expected[1]['TP'] = 5
+        expected[1]['FP'] = 3
+        expected[1]['FN'] = 2
+        expected[2]['TP'] = 1
+        expected[2]['FP'] = 3
+        expected[2]['FN'] = 2
 
         assert result == expected
 
     def test_compute_precision(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = [eval_tool.compute_precision(x, stats) for x in eval_tool.labels]
         prec_sklearn = list(precision_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
+            y_true=trues,
+            y_pred=preds,
             labels=eval_tool.labels,
             average=None
         ))
@@ -62,13 +70,24 @@ class TestEvaluationTool(object):
 
     def test_compute_recall(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = [eval_tool.compute_recall(x, stats) for x in eval_tool.labels]
         rec_sklearn = list(recall_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
+            y_true=trues,
+            y_pred=preds,
             labels=eval_tool.labels,
             average=None
         ))
@@ -77,15 +96,25 @@ class TestEvaluationTool(object):
 
     def test_get_avg_precision(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
-        labels = list(stats.keys())
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = eval_tool.get_avg_precision(stats=stats)
         prec_avg_sklearn = precision_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
-            labels=labels,
+            y_true=trues,
+            y_pred=preds,
+            labels=eval_tool.labels,
             average='macro'
         )
 
@@ -94,13 +123,24 @@ class TestEvaluationTool(object):
 
     def test_get_avg_recall(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = eval_tool.get_avg_recall(stats=stats)
         rec_avg_sklearn = recall_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
+            y_true=trues,
+            y_pred=preds,
             labels=eval_tool.labels,
             average='macro'
         )
@@ -108,8 +148,19 @@ class TestEvaluationTool(object):
 
     def test_compute_precision_unbalanced(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = [eval_tool.compute_precision(x, stats) for x in eval_tool.labels]
 
@@ -117,8 +168,19 @@ class TestEvaluationTool(object):
 
     def test_compute_recall_unbalanced(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = [eval_tool.compute_recall(x, stats) for x in eval_tool.labels]
 
@@ -126,14 +188,25 @@ class TestEvaluationTool(object):
 
     def test_get_avg_prec_legit(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';', legit=0)
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool(legit=0)
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = eval_tool.get_avg_precision(stats, legit=False)
         eval_tool.labels.remove(0)
         prec_avg_sklearn = precision_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
+            y_true=trues,
+            y_pred=preds,
             labels=eval_tool.labels,
             average='macro'
         )
@@ -142,14 +215,25 @@ class TestEvaluationTool(object):
 
     def test_get_avg_rec_legit(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';', legit=0)
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool(legit=0)
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = eval_tool.get_avg_recall(stats=stats, legit=False)
         eval_tool.labels.remove(0)
         rec_avg_sklearn = recall_score(
-            y_true=eval_tool.trues,
-            y_pred=eval_tool.preds,
+            y_true=trues,
+            y_pred=preds,
             labels=eval_tool.labels,
             average='macro'
         )
@@ -159,8 +243,19 @@ class TestEvaluationTool(object):
 
     def test_get_avg_prec_nans_false(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = eval_tool.get_avg_precision(stats, nan=False)
 
@@ -169,8 +264,19 @@ class TestEvaluationTool(object):
 
     def test_get_avg_rec_nans_false(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = eval_tool.get_avg_recall(stats=stats, nan=False)
 
@@ -179,8 +285,19 @@ class TestEvaluationTool(object):
 
     def test_get_avg_prec_nans_true(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         prec = eval_tool.get_avg_precision(stats, nan=True)
 
@@ -189,8 +306,19 @@ class TestEvaluationTool(object):
 
     def test_get_avg_rec_nans_true(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
-        eval_tool = EvaluationTool(file_path, ';')
-        stats = eval_tool.compute_stats()
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         rec = eval_tool.get_avg_recall(stats=stats, nan=True)
 
@@ -200,7 +328,10 @@ class TestEvaluationTool(object):
 
     def test_read_keys(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool(file_path, ';', agg=True)
+        load_tool = LoadingTool()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            metadata = metadata.append(chunk[2])
 
         expected = pd.DataFrame(
             np.array([
@@ -211,12 +342,25 @@ class TestEvaluationTool(object):
             columns=['timestamp', 'user', 'flow']
         )
 
-        assert eval_tool.metadata.equals(expected)
+        assert metadata.equals(expected)
 
     def test_compute_aggregated_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
-        eval_tool = EvaluationTool(file_path, ';', agg=True)
-        aggregated_stats = eval_tool.compute_aggregated_stats('user')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            metadata = metadata.append(chunk[2])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
 
         expected_stats = {
             1: {
@@ -235,28 +379,56 @@ class TestEvaluationTool(object):
                 'FN': 2
             }
         }
-        assert aggregated_stats == expected_stats
+        assert stats == expected_stats
 
     def test_get_stats_counts(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
-        eval_tool = EvaluationTool(file_path, ';', agg=True)
-        aggregated_stats = eval_tool.compute_aggregated_stats('user')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            metadata = metadata.append(chunk[2])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
         expected_counts = {
             'TP': 4,
             'FP': 3,
             'FN': 3
         }
-        counts = eval_tool.get_stats_counts(eval_tool.labels, aggregated_stats)
+        counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
         assert expected_counts == counts
 
     def test_get_stats_counts_one_label(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_one_label')
-        eval_tool = EvaluationTool(file_path, ';', agg=True)
-        aggregated_stats = eval_tool.compute_aggregated_stats('user')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            metadata = metadata.append(chunk[2])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
         expected_counts = {
             'TP': 1,
             'FP': 0,
             'FN': 0
         }
-        counts = eval_tool.get_stats_counts(1, aggregated_stats)
+        counts = eval_tool.get_stats_counts(1, stats)
         assert expected_counts == counts

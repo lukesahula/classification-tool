@@ -13,7 +13,10 @@ class EvaluationTool():
 
     def compute_stats(self, data_chunk):
         """
-        Computes TPs, FPs, TNs and FNs of the given data.
+        Computes TPs, FPs and FNs of the given data using sklearn.
+        :param data_chunk: A chunk of data containing trues and preds.
+        :return: A dictionary of stats containing TPs, FPs, FNs for all
+        labels.
         """
         trues = data_chunk[0]
         preds = data_chunk[1]
@@ -26,7 +29,6 @@ class EvaluationTool():
         FP = matrix.sum(axis=0) - np.diag(matrix)
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
-        TN = matrix.sum() - (FP + FN + TP)
 
         stats = defaultdict(dict)
 
@@ -34,14 +36,17 @@ class EvaluationTool():
             stats[label]['FP'] = FP[i]
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
-            stats[label]['TN'] = TN[i]
 
         return dict(stats)
 
     def compute_aggregated_stats(self, agg_column, data_chunk):
         """
-        Computes TPs, FPs, and FNs of the given data aggregated by
+        Computes TPs, FPs and FNs of the given data aggregated by
         the specified agg_collumn.
+        :param agg_column: The name of the column specifying the aggregation.
+        :param data_chunk: A chunk of data containing trues and preds.
+        :return: A dictionary of stats containing TPs, FPs and FNs for all
+        labels.
         """
 
         stats = defaultdict(lambda: defaultdict(set))
@@ -56,7 +61,7 @@ class EvaluationTool():
         #TODO Smelly
         self.labels = sorted(set(labels) | set(self.labels))
 
-        for i in range(len(keys)):
+        for i in range(len(trues)):
             if trues[i] == preds[i]:
                 stats[trues[i]]['TP'].add(keys[i])
             else:
@@ -76,8 +81,8 @@ class EvaluationTool():
     def compute_precision(self, class_label, stats):
         """
         Computes precision for the given class label.
-        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :param class_label: Class label of the row.
+        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :return: Computed precision of the classifier for the given class.
         """
         TP = stats[class_label]['TP']
@@ -90,8 +95,8 @@ class EvaluationTool():
     def compute_recall(self, class_label, stats):
         """
         Computes recall for the given class label.
-        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :param class_label: Class label of the row.
+        :param stats: Computed statistics (TPs, FPs, FNs for given label)
         :return: Computed recall of the classifier for the given class.
         """
         TP = stats[class_label]['TP']
@@ -152,6 +157,7 @@ class EvaluationTool():
     def get_stats_counts(self, labels, stats):
         """
         Counts TPS, FPS and FNs for given labels
+        :param labels: A list of labels or a single label.
         :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :return: Dictionary of counts.
         """
