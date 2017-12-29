@@ -1,0 +1,46 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+
+\addto\captionsczech{
+  \renewcommand{\contentsname}
+    {Table of contents}
+}
+
+\title{Toolkit for machine learning experiments with decision forests on network data}
+\date{2017-12-29}
+\author{Lukáš Sahula}
+
+\begin{document}
+  \maketitle
+  \newpage
+  \section*{Abstract}
+    The aim of the project is to implement a toolkit for malware classification. Given the size and form of the data taken from network proxy logs, the toolkit has to be able to properly load potentially large datasets, train a classifier and evaluate its results. This thesis describes the form and relevance of the network datasets, gives an introduction to malware classification and specifies the measures that are evaluated by the toolkit. A large portion of the thesis focuses on the toolkit implementation and the problems which surfaced during the process.
+    \\\\Záměrem tohoto projektu je implementovat knihovnu pro klasifikaci malwaru. Vzhledem k velikosti a formě dat získaných ze síťových proxy logů musí knihovna umět správně nahrávat potenciálně velká data, natrénovat klasifikátor a vyhodnotit jeho výsledky. Práce popisuje formu a relevanci těchto síťových dat, podává stručný úvod do klasifikace malwaru a specifikuje vyhodnocované veličiny. Velká část práce se zabývá samotnou implementací jednotlivých modulů knihovny a problémy, které se v průběhu objevily.
+  \newpage
+  \tableofcontents
+  \newpage
+
+  \section*{Introduction}
+  \addcontentsline{toc}{section}{Introduction}
+  \newpage
+  \section{Network data}
+  \newpage
+  \section{Malware classification}
+  \newpage
+  \section{Evaluation measures}
+  \newpage
+  \section{Toolkit implementation}
+    \subsection{Loading tool}
+    \newpage
+    \subsection{Classification tool}
+    \newpage
+    \subsection{Evaluation tool}
+    \newpage
+  \section{Future work}
+    \subsection{Random forests}
+    \newpage
+  \section*{Conclusion}
+  \addcontentsline{toc}{section}{Conclusion}
+\end{document}
