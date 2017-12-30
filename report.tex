@@ -2,6 +2,8 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[czech]{babel}
+\usepackage{listings}
+\lstset{language=Python}
 
 \addto\captionsczech{
   \renewcommand{\contentsname}
@@ -9,27 +11,35 @@
 }
 
 \title{Toolkit for machine learning experiments with decision forests on network data}
-\date{2017-12-29}
+\date{2017-12-30}
 \author{Lukáš Sahula}
 
 \begin{document}
   \maketitle
   \newpage
   \section*{Abstract}
-    The aim of the project is to implement a toolkit for malware classification. Given the size and form of the data taken from network proxy logs, the toolkit has to be able to properly load potentially large datasets, train a classifier and evaluate its results. This thesis describes the form and relevance of the network datasets, gives an introduction to malware classification and specifies the measures that are evaluated by the toolkit. A large portion of the thesis focuses on the toolkit implementation and the problems which surfaced during the process.
-    \\\\Záměrem tohoto projektu je implementovat knihovnu pro klasifikaci malwaru. Vzhledem k velikosti a formě dat získaných ze síťových proxy logů musí knihovna umět správně nahrávat potenciálně velká data, natrénovat klasifikátor a vyhodnotit jeho výsledky. Práce popisuje formu a relevanci těchto síťových dat, podává stručný úvod do klasifikace malwaru a specifikuje vyhodnocované veličiny. Velká část práce se zabývá samotnou implementací jednotlivých modulů knihovny a problémy, které se v průběhu objevily.
+    The aim of the project is to implement a toolkit for malware classification that will be used in the followup Bachelor's thesis for machine learning experiments upon datasets with missing values. Given the size and form of the data taken from network proxy logs, the toolkit has to be able to properly load potentially large datasets, train a classifier and evaluate its results. This thesis describes the form and relevance of the network datasets, gives an introduction to malware classification and specifies the measures that are evaluated by the toolkit. A large portion of the thesis focuses on the toolkit implementation and the problems surfacing during the process.
+    \\~\\
+    Záměrem tohoto projektu je implementovat knihovnu pro klasifikaci malwaru, která bude využita v následující bakalářské práci pro experimenty na datasetech s chybějícími hodnotami ve strojovém učení. Vzhledem k velikosti a formě dat získaných ze síťových proxy logů musí knihovna umět správně nahrávat potenciálně velká data, natrénovat klasifikátor a vyhodnotit jeho výsledky. Práce popisuje formu a relevanci těchto síťových dat, podává stručný úvod do klasifikace malwaru a specifikuje vyhodnocované veličiny. Velká část práce se zabývá samotnou implementací jednotlivých modulů knihovny a problémy, které se v průběhu objevily.
   \newpage
   \tableofcontents
   \newpage
 
   \section*{Introduction}
   \addcontentsline{toc}{section}{Introduction}
+    This thesis focuses on the implementation of a machine learning toolkit for supervised malware classification. The purpose of this toolkit is to be able to load variously sized datasets previously extracted from network proxy logs, preprocess these datasets, use them to fit a classifier and evaluate the classifier's performance. Because the toolkit has three arguably different jobs to do - loading, classification and evaluation of the datasets - it is separated into three independent modules. Each module is designed to be working as a standalone piece of program and to leave the possibility open of applying it to a different problem than malware classification with minor changes.
+  \\~\\
+    The thesis consists of several sections. At the beginning, there is a short explanation of the network datasets, followed by a brief introduction to machine learning and malware classification. The next chapter gives a summary of the measures evaluated in the classification results. The chapter after that delves into the implementation process and breaks down the three modules of the toolkit one by one. The last section is dedicated to the random forest classifier algorithm that will have to be implemented from scratch in order to provide more possibilities for future experimentation.
   \newpage
   \section{Network data}
+    The datasets extracted from network proxy logs used in this project are in the form of zipped csv files. They are 
   \newpage
   \section{Malware classification}
   \newpage
   \section{Evaluation measures}
+    \subsection{Precision}
+    \newpage
+    \subsection{Recall}
   \newpage
   \section{Toolkit implementation}
     \subsection{Loading tool}
