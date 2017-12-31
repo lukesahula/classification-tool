@@ -3,8 +3,7 @@
 \usepackage{mathtools} 
 \usepackage[utf8]{inputenc}
 \usepackage[czech]{babel}
-\usepackage{listings}
-\lstset{language=Python}
+\usepackage[]{algorithm2e}
 
 \addto\captionsczech{
   \renewcommand{\contentsname}
@@ -35,7 +34,7 @@
   \section{Malware classification}
     {\it Classification} is the process of assigning a label (or a class) from a set of categories to a new observation based on its {\it features}. An example could be a classification algorithm that predicts whether a patient's tumor is benign or malign based on its size and the age of the patient. In this specific case, an observation is a single record from the network dataset. The algorithms doing the classification are called {\it classifiers}. Classification is a form of {\it supervised learning}. This means that the classifier learns from a previously classified set of records called the {\it training dataset}. The classifier learns from this training dataset and is then able to predict the class of a new observation with some level of accuracy. To test the performance of the classifier, usually a different set of labeled records called the {\it testing dataset} is used. It is important to separate the testing data from the training data to see if the classifier can perform adequately on previously unseen observations. Since there are multiple classes of malware in these network datasets, the classification process is called {\it multiclass classification}. The classifier does not simply state if the observation is malware or non-malware, it also states which class of malware the observation belongs to. From the set of classifier algorithms, the {\it random forest classifier} is the one that suits this malware classification problem the most. It handles multiclass classification, evaluates the data relatively fast and is not heavily affected by {\it imbalanced datasets}.
   \section{Network data}
-    The datasets extracted from network proxy logs used in this project are in the form of zipped csv files. They are divided into {\it negative} samples and {\it positive} samples. Negative samples form the majority of the data and they are those that were previously labeled as benign (non-malware). Positive samples were previously classified as some specific class of malware. When there are significant differences in counts of the classes of the dataset, which is the case here, it is called an {\it imbalanced dataset}. The samples are further diversified by the day they were taken, which provides the opportunity to observe the differences in performance of a classifier trained on data from one day and tested on data from a week later compared to the performance of the same classifier tested on data from a month or a year later. The {\it feature vector} of these samples contains 55 features but a significant amount of the records is missing some of its feature values. To deal with this missing values problem is the goal of the bachelor's thesis. The missing values are simply replaced by a constant for this project's purposes, since it does not affect the random forest classifier strongly. Apart from the label and the feature vector, each record contains a few metadata entries, like the timestamp of the record, that are used further in the evaluation process.
+    The datasets extracted from network proxy logs used in this project are in the form of zipped csv files, where each file contains proxy logs of a single user. They are divided into {\it negative} samples and {\it positive} samples. Negative samples form the majority of the data and they are those that were previously labeled as benign (non-malware). Positive samples were previously classified as some specific class of malware. When there are significant differences in counts of the classes of the dataset, which is the case here, it is called an {\it imbalanced dataset}. The samples are further diversified by the day they were taken, which provides the opportunity to observe the differences in performance of a classifier trained on data from one day and tested on data from a week later compared to the performance of the same classifier tested on data from a month or a year later. The {\it feature vector} of these samples contains 55 features but a significant amount of the records is missing some of its feature values. To deal with this missing values problem is the goal of the bachelor's thesis. The missing values are simply replaced by a constant for this project's purposes, since it does not affect the random forest classifier strongly. Apart from the label and the feature vector, each record contains a few metadata entries, like the timestamp of the record, that are used further in the evaluation process.
   \newpage
   \section{Evaluation measures}
     There is a plenty of measures that can be observed in classifier's performance. The most commonly observed is perhaps the {\it classification error}. The problem with classification error is that it does not say much when the dataset is imbalanced, as is the situation with the network data. For example if we had a dataset where there are 10,000 samples and only 1 of them belonged to a positive class, the classifier could classify all samples as negative and it would achieve a classification error of 0.01 \%. In this project we are interested in two different measures, {\it precision} and {\it recall}. In order to compute them, we also need the {\it confusion matrix}.
@@ -67,10 +66,32 @@
   \section{Toolkit implementation}
       This chapter takes a long, hard look at the toolkit's implementation process and the three modules it consists of. The programming language chosen for this task is Python because of its advantages and convenience when it comes to fast prototyping and machine learning.
     \subsection{Loading tool}
+      This module contains mainly functions to load training and testing data. Apart from that, there are also some data preprocessing functions like data quantization, that did not fit into any of the other modules. A function to load a csv with classifications for the purpose of evaluation is also in this module.
+      \subsubsection{Load training data}
+        In order to train a classifier on the network datasets, the first issue is to load the csv files containing the training data into a data structure. That is a straightforward task, but working with relatively large datasets comes with a problem regarding memory. It is practically impossible to load the data from the whole day into memory even on high-end machines. As was mentioned earlier, the network datasets are imbalanced, the amount of negative samples is multiple times larger than the amount of positives. This fact provides an option to take a random sample of the negatives and train the classifier with this sample. Since each csv file is specific for a different user, it is not a safe practice to take a random sample of the files. To avoid this potential information loss, the better way is to go through each file, take a sample from it and concatenate it to the data structure.
+      \subsubsection{Load testing data}
+        The testing dataset, however, should not be sampled at all. Luckily, the classifier does not require all the testing data at once. It is possible to send it to the classifier part by part, which can be done in Python simply by turning the function into a {\it generator function} and instead of returning the data it {\it yields} it. That way it is possible to iterate through this function in a for loop and call the prediction function of the classifier on each iteration.
+      \subsubsection{Quantize data}
+        The feature values of every feature vector in the network datasets span across large intervals and to increase the classifier's performance, it is helpful to {\it quantize} the values into a set number of bins. This is done by computing a set number of quantiles and then replacing all the values with the quantile value. After some testing, the classifier had the best results with 16 bins.
+      \subsubsection{Load classifications}
+        After the classifier is done with the classification, the classification tool saves all its predictions into a csv file with columns containing the true labels and the predicted labels and, optionally, the metadata values mentioned in the previous chapter. This produces a large csv file that has to be processed by the evaluation tool part by part. Like the LoadTestingData function, this function is also a generator function that reads the classifications in parts of a specific number of lines.
     \newpage
     \subsection{Classification tool}
+      This module works as a superstructure to the classifier that is passed as a parameter to the constructor. It encapsulates the classifiers functions and simplifies the classification process into two functions, one to fit the classifier and the other to use it to predict the classes of the testing data and save the results into a file.
+      \subsubsection{Train classifier}
+        All this function does is that it passes the data in the correct form into the classifiers fit function. Since most relevant classifiers implement this function, it should work no matter what classifier is given to the classification tool.
+      \subsubsection{Save predictions}
+        This function reads the testing data chunk by chunk and calls the classifiers predict function upon every chunk. After predicting each chunk, it then saves the predicted and the true class and the metadata into a new csv file.
     \newpage
     \subsection{Evaluation tool}
+      The purpose of this module is to create the confusion matrix and compute precision and recall for every class from the classifier's output.
+      \subsubsection{Compute stats}
+      \subsubsection{Compute aggregated stats}
+      \subsubsection{Compute precision}
+      \subsubsection{Compute recall}
+      \subsubsection{Get average precision}
+      \subsubsection{Get average recall}
+      \subsubsection{Get stats count}
     \newpage
   \section{Future work}
     \subsection{Random forests}
