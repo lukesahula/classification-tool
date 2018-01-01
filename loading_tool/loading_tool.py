@@ -26,7 +26,7 @@ class LoadingTool():
 
         # Load and sample negative records first.
         files = glob.glob(os.path.join(path, 'neg', '*.gz'))
-        data = self.sample_negatives(files)
+        data = self.__sample_negatives(files)
 
         # Read positive records and concatenate with sampled negatives.
         files = glob.glob(os.path.join(path, 'pos', '*.gz'))
@@ -81,7 +81,7 @@ class LoadingTool():
 
             yield data, labels, metadata
 
-    def sample_negatives(self, files):
+    def __sample_negatives(self, files):
         """
         Creates a random sample of negative records from given files.
         :param files: Negative gzipped files.
@@ -91,7 +91,7 @@ class LoadingTool():
         samples_per_part = self.neg_samples // len(files)
         for file in files:
             unsampled = pd.read_csv(file, sep='\t', header=None)
-            sampled_indices = self.sample_indices(
+            sampled_indices = self.__sample_indices(
                 list(unsampled.index.values),
                 samples_per_part
             )
@@ -100,7 +100,7 @@ class LoadingTool():
         return data
 
 
-    def sample_indices(self, indices, samples_count):
+    def __sample_indices(self, indices, samples_count):
         """
         Creates a random sample of the datasets indices
         :param indices: A list of indices.
@@ -110,7 +110,7 @@ class LoadingTool():
         return random.sample(indices, samples_count)
 
 
-    def compute_bins(self, dataset):
+    def __compute_bins(self, dataset):
         """
         Computes bins for data quantization.
         :param dataset: Pandas dataframe with feature vectors
@@ -147,7 +147,7 @@ class LoadingTool():
         :return: A tuple with quantized features (features, labels, metadata)
         """
         if not self.bins:
-            self.bins = self.compute_bins(dataset[0])
+            self.bins = self.__compute_bins(dataset[0])
 
         quantized_frame = pd.DataFrame()
 

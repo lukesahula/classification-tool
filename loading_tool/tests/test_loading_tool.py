@@ -98,21 +98,7 @@ class TestLoadingTool(object):
                 and expected[1].equals(result[1])
                 and expected[2].equals(result[2]))
 
-    def test_sample_indices(self):
-        sampling_settings = {
-            'bin_count': 16,
-            'neg_samples': 10,
-            'bin_samples': 0,
-            'seed': 0
-        }
-        loading_tool = LoadingTool(sampling_settings)
-        indices = list(range(40))
-        sampled_indices = loading_tool.sample_indices(indices, 10)
-        expected = [24, 26, 2, 16, 32, 31, 25, 19, 30, 11]
-
-        assert sampled_indices == expected
-
-    def test_compute_bins(self):
+    def test_quantize_data_binned(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
         sampling_settings = {
             'bin_count': 16,
@@ -122,26 +108,7 @@ class TestLoadingTool(object):
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)
-        bins = loading_tool.compute_bins(dataset)
-        expected_bin = [
-            10, 10.625, 11.25, 11.875, 12.5, 13.125, 13.75, 14.375, 15.0,
-            15.625, 16.25, 16.875, 17.5, 18.125, 18.75, 19.375, 20.0
-        ]
-        expected = [expected_bin, expected_bin, expected_bin, [10]]
-
-        assert bins == expected
-
-    def test_quantize_data(self):
-        path = os.path.join(DATA_DIR, 'test_quantization')
-        sampling_settings = {
-            'bin_count': 16,
-            'neg_samples': None,
-            'bin_samples': 3,
-            'seed': 0
-        }
-        dataset = pd.read_csv(path, sep=';', header=None)
-        loading_tool = LoadingTool(sampling_settings)
-        loading_tool.bins = loading_tool.compute_bins(dataset)
+        loading_tool.quantize_data((dataset, None, None))
         dataset.loc[-1] = [11, 19, 14, 10]
         dataset.index = dataset.index + 1
         dataset = dataset.sort_index()

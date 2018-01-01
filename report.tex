@@ -64,7 +64,7 @@
       Recall is the fraction of positive objects that the classifier labeled as positive among all truly positive objects. It can be interpreted as the probability that a truly positive object is labeled as positive. A recall score of 1.0 means that every truly positive object is labeled as positive by the classifier. This could be achieved simply by labeling all objects as positive, recall does not say anything about the number of false positives. Recall of every class varies among all classes in multiclass environment.
   \newpage
   \section{Toolkit implementation}
-      This chapter takes a long, hard look at the toolkit's implementation process and the three modules it consists of. The programming language chosen for this task is Python because of its advantages and convenience when it comes to fast prototyping and machine learning.
+      This chapter takes a long, hard look at the toolkit's implementation process and the three modules it consists of. The programming language chosen for this task is Python because of its advantages and convenience when it comes to fast prototyping and machine learning. For each module, there is a list of all public functions and an explanation of their purpose and the problems that arose during the implementation.
     \subsection{Loading tool}
       This module contains mainly functions to load training and testing data. Apart from that, there are also some data preprocessing functions like data quantization, that did not fit into any of the other modules. A function to load a csv with classifications for the purpose of evaluation is also in this module.
       \subsubsection{Load training data}
@@ -72,14 +72,14 @@
       \subsubsection{Load testing data}
         The testing dataset, however, should not be sampled at all. Luckily, the classifier does not require all the testing data at once. It is possible to send it to the classifier part by part, which can be done in Python simply by turning the function into a {\it generator function} and instead of returning the data it {\it yields} it. That way it is possible to iterate through this function in a for loop and call the prediction function of the classifier on each iteration.
       \subsubsection{Quantize data}
-        The feature values of every feature vector in the network datasets span across large intervals and to increase the classifier's performance, it is helpful to {\it quantize} the values into a set number of bins. This is done by computing a set number of quantiles and then replacing all the values with the quantile value. After some testing, the classifier had the best results with 16 bins.
+        The feature values of every feature vector in the network datasets span across large intervals and to increase the classifier's performance, it is helpful to {\it quantize} the values into a set number of bins. This is done by computing a set number of quantiles and then replacing all the values with the quantile value. After some testing, the classifier had the best results with 16 bins. 
       \subsubsection{Load classifications}
         After the classifier is done with the classification, the classification tool saves all its predictions into a csv file with columns containing the true labels and the predicted labels and, optionally, the metadata values mentioned in the previous chapter. This produces a large csv file that has to be processed by the evaluation tool part by part. Like the LoadTestingData function, this function is also a generator function that reads the classifications in parts of a specific number of lines.
     \newpage
     \subsection{Classification tool}
       This module works as a superstructure to the classifier that is passed as a parameter to the constructor. It encapsulates the classifiers functions and simplifies the classification process into two functions, one to fit the classifier and the other to use it to predict the classes of the testing data and save the results into a file.
       \subsubsection{Train classifier}
-        All this function does is that it passes the data in the correct form into the classifiers fit function. Since most relevant classifiers implement this function, it should work no matter what classifier is given to the classification tool.
+        This function passes the training data into the classifier's fit function. It relies on the classifier implementing this function, but sice all relevant classifiers do, this function should work no matter what classifier is passed to the classification tool upon construction.
       \subsubsection{Save predictions}
         This function reads the testing data chunk by chunk and calls the classifiers predict function upon every chunk. After predicting each chunk, it then saves the predicted and the true class and the metadata into a new csv file.
     \newpage
