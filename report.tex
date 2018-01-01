@@ -11,7 +11,7 @@
 }
 
 \title{Toolkit for machine learning experiments with decision forests on network data}
-\date{2017-12-31}
+\date{2018-01-01}
 \author{Lukáš Sahula}
 
 \begin{document}
@@ -39,7 +39,7 @@
   \section{Evaluation measures}
     There is a plenty of measures that can be observed in classifier's performance. The most commonly observed is perhaps the {\it classification error}. The problem with classification error is that it does not say much when the dataset is imbalanced, as is the situation with the network data. For example if we had a dataset where there are 10,000 samples and only 1 of them belonged to a positive class, the classifier could classify all samples as negative and it would achieve a classification error of 0.01 \%. In this project we are interested in two different measures, {\it precision} and {\it recall}. In order to compute them, we also need the {\it confusion matrix}.
     \subsection{Confusion matrix}
-      In binary classification, we can label the two classes as positive and negative. Confusion matrix divides the classification results into the following categories:
+      In binary classification, we can label the two classes as positive and negative. {\it Confusion matrix} divides the classification results into the following categories:
       \begin{description}
       \item [TP:] True positives. The number of positive observations the classifier labeled as positive.
       \item [FP:] False positives. The number of negative observations the classifier labeled as positive.
@@ -48,7 +48,7 @@
       \end{description}
       These categories are then used to compute other, more interesting measures.
       \\~\\
-      In multiclass classification, the confusion matrix gets more complicated. Consider a dataset with 3 different classes A, B and C. If the classifier takes a sample that belongs to class A and labels it as B, then it counts as FN for class A, but as FP for class B. With the network datasets it gets even more confusing. The samples are either negative and thus belonging to one specific class, or positive, which means one of multiple positive classes. For that reason, samples belonging to the negative classes that are classified as negative do not count as TP. Similarly, when a positive sample is labeled as positive but a different class, it should not be counted as FN, rather as TPish.
+      In multiclass classification, the {\it confusion matrix} gets more complicated. Consider a dataset with 3 different classes A, B and C. If the classifier takes a sample that belongs to class A and labels it as B, then it counts as FN for class A, but as FP for class B. With the network datasets it gets even more confusing. The samples are either negative and thus belonging to one specific class, or positive, which means one of multiple positive classes. For that reason, samples belonging to the negative classes that are classified as negative do not count as TP. Similarly, when a positive sample is labeled as positive but a different class, it should not be counted as FN, rather as TPish. As for TNs, it does not make much sense to distinguish them from TPs, since they basically are TPs for the negative class. In the context of this project, TNs do not get counted and the TPs of the negative class are optionally filtered out in the process.
     \newpage
     \subsection{Precision}
       {\it Precision}, or {\it positive predictive value} is defined as:
@@ -72,7 +72,7 @@
       \subsubsection{Load testing data}
         The testing dataset, however, should not be sampled at all. Luckily, the classifier does not require all the testing data at once. It is possible to send it to the classifier part by part, which can be done in Python simply by turning the function into a {\it generator function} and instead of returning the data it {\it yields} it. That way it is possible to iterate through this function in a for loop and call the prediction function of the classifier on each iteration.
       \subsubsection{Quantize data}
-        The feature values of every feature vector in the network datasets span across large intervals and to increase the classifier's performance, it is helpful to {\it quantize} the values into a set number of bins. This is done by computing a set number of quantiles and then replacing all the values with the quantile value. After some testing, the classifier had the best results with 16 bins. 
+        The feature values of every feature vector in the network datasets span across large intervals and to increase the classifier's performance, it is helpful to {\it quantize} the values into a set number of bins. This is done by computing a set number of quantiles and then replacing all the values with the quantile value. After some testing, the classifier had the best results with 16 bins. The bins get computed only once from the training dataset and then they are applied to the testing dataset as well.
       \subsubsection{Load classifications}
         After the classifier is done with the classification, the classification tool saves all its predictions into a csv file with columns containing the true labels and the predicted labels and, optionally, the metadata values mentioned in the previous chapter. This produces a large csv file that has to be processed by the evaluation tool part by part. Like the LoadTestingData function, this function is also a generator function that reads the classifications in parts of a specific number of lines.
     \newpage
@@ -86,13 +86,23 @@
     \subsection{Evaluation tool}
       The purpose of this module is to create the confusion matrix and compute precision and recall for every class from the classifier's output.
       \subsubsection{Compute stats}
+        This function computes the confusion matrix and saves the counts of TPs, FPs and FNs for each class in a dictionary.
       \subsubsection{Compute aggregated stats}
+        This function essentialy does the same as the function above, with one difference. It takes an extra parameter specifying one column of the metadata by which the stats should be aggregated. This could be for instance the column identifying a user. If a user is associated with a true positive record of some class already, it does not make sense for him to have a false positive or false negative record of that same class. To add to that, the aggregation removes duplicities, as in if a user has a true positive record of some class, it remains there only once.
       \subsubsection{Compute precision}
+        Computes precision for the given class from the confusion matrix according to the math formula. If there are no TPs and no FPs, this function return NaN.
       \subsubsection{Compute recall}
+        Computes recall for the given class from the confusion matrix according to the math formula. If there are no TPs and no FNs, this function return NaN.
       \subsubsection{Get average precision}
+        Iterates over all known classes and computes the average precision. Optionally, it is possible to choose whether or not to include the negative class in the computation.
       \subsubsection{Get average recall}
+        Iterates over all known classes and computes the average recall. Optionally, it is possible to choose whether or not to include the negative class in the computation.
       \subsubsection{Get stats count}
+        For the given list of classes and the aggregated/unaggregated stats, this function counts the amount of TPs, FPs and FNs.
     \newpage
+  \section{Runner}
+    The runner is the part of the program, where all the modules come together and form a pipeline that loads the data, trains the classifier and evaluates its result. In the process of evaluation, the runner writes into an output file the average precision and recall as well as the individual statistics for each class. It also gives information about the number of classes with precision or recall above some specific levels. After this pipeline finishes, the runner encapsulates the trained classifier along with some additional data, such as the bins for quantization, and serializes it into a file for future use. By passing an argument into the runner's execution function it is possible to specify whether a new classifier should be trained, or an already trained one should be used.
+  \newpage
   \section{Future work}
     \subsection{Random forests}
     \newpage
