@@ -19,7 +19,7 @@ class TestEvaluationTool(object):
 
     def test_compute_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool()
+        eval_tool = EvaluationTool(legit=0)
         load_tool = LoadingTool()
         result = defaultdict(lambda: defaultdict(int))
         for chunk in load_tool.load_classifications(file_path, ';', True):
@@ -30,9 +30,9 @@ class TestEvaluationTool(object):
                 result[label]['TP'] += chunk_stats[label]['TP']
 
         expected = defaultdict(lambda: defaultdict(int))
-        expected[0]['TP'] = 1
+        expected[0]['TP'] = 0
         expected[0]['FP'] = 2
-        expected[0]['FN'] = 4
+        expected[0]['FN'] = 0
         expected[1]['TP'] = 5
         expected[1]['FP'] = 3
         expected[1]['FN'] = 2
@@ -44,7 +44,7 @@ class TestEvaluationTool(object):
 
     def test_compute_precision(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool()
+        eval_tool = EvaluationTool(legit=0)
         load_tool = LoadingTool()
         stats = defaultdict(lambda: defaultdict(int))
         trues = pd.Series()
@@ -58,11 +58,12 @@ class TestEvaluationTool(object):
                 stats[label]['FN'] += chunk_stats[label]['FN']
                 stats[label]['TP'] += chunk_stats[label]['TP']
 
-        prec = [eval_tool.compute_precision(x, stats) for x in eval_tool.labels]
+        labels = [1, 2]
+        prec = [eval_tool.compute_precision(x, stats) for x in labels]
         prec_sklearn = list(precision_score(
             y_true=trues,
             y_pred=preds,
-            labels=eval_tool.labels,
+            labels=labels,
             average=None
         ))
 
@@ -70,7 +71,7 @@ class TestEvaluationTool(object):
 
     def test_compute_recall(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
-        eval_tool = EvaluationTool()
+        eval_tool = EvaluationTool(legit=0)
         load_tool = LoadingTool()
         stats = defaultdict(lambda: defaultdict(int))
         trues = pd.Series()
@@ -84,11 +85,12 @@ class TestEvaluationTool(object):
                 stats[label]['FN'] += chunk_stats[label]['FN']
                 stats[label]['TP'] += chunk_stats[label]['TP']
 
-        rec = [eval_tool.compute_recall(x, stats) for x in eval_tool.labels]
+        labels = [1, 2]
+        rec = [eval_tool.compute_recall(x, stats) for x in labels]
         rec_sklearn = list(recall_score(
             y_true=trues,
             y_pred=preds,
-            labels=eval_tool.labels,
+            labels=labels,
             average=None
         ))
 
@@ -348,19 +350,20 @@ class TestEvaluationTool(object):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
         eval_tool = EvaluationTool()
         load_tool = LoadingTool()
-        stats = defaultdict(lambda: defaultdict(int))
+        stats = defaultdict(lambda: defaultdict(set))
         trues = pd.Series()
         preds = pd.Series()
         metadata = pd.DataFrame()
         for chunk in load_tool.load_classifications(file_path, ';', True):
-            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            chunk_stats = eval_tool.compute_stats_for_agg('user', chunk)
             trues = trues.append(chunk[0])
             preds = preds.append(chunk[1])
             metadata = metadata.append(chunk[2])
-            for label in chunk_stats:
-                stats[label]['FP'] += chunk_stats[label]['FP']
-                stats[label]['FN'] += chunk_stats[label]['FN']
-                stats[label]['TP'] += chunk_stats[label]['TP']
+            for k, v in chunk_stats.items():
+                stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                stats[k]['TP'] = stats[k]['TP'] | v['TP']
+        stats = eval_tool.aggregate_stats(stats)
 
         expected_stats = {
             1: {
@@ -381,23 +384,67 @@ class TestEvaluationTool(object):
         }
         assert stats == expected_stats
 
-    def test_get_stats_counts(self):
-        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
-        eval_tool = EvaluationTool()
+    def test_compute_relaxed_stats(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_relax')
+        eval_tool = EvaluationTool(legit=0)
         load_tool = LoadingTool()
-        stats = defaultdict(lambda: defaultdict(int))
+        stats = defaultdict(lambda: defaultdict(set))
         trues = pd.Series()
         preds = pd.Series()
         metadata = pd.DataFrame()
         for chunk in load_tool.load_classifications(file_path, ';', True):
-            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            chunk_stats = eval_tool.compute_stats_for_agg('user', chunk, True)
             trues = trues.append(chunk[0])
             preds = preds.append(chunk[1])
             metadata = metadata.append(chunk[2])
-            for label in chunk_stats:
-                stats[label]['FP'] += chunk_stats[label]['FP']
-                stats[label]['FN'] += chunk_stats[label]['FN']
-                stats[label]['TP'] += chunk_stats[label]['TP']
+            for k, v in chunk_stats.items():
+                stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                stats[k]['TP'] = stats[k]['TP'] | v['TP']
+        stats = eval_tool.aggregate_stats(stats)
+
+        expected_stats = {
+            0: {
+                'TP' : 0,
+                'FP' : 1,
+                'FN' : 0
+            },
+            1: {
+                'TP' : 7,
+                'FP' : 0,
+                'FN' : 2
+            },
+            2: {
+                'TP': 1,
+                'FP': 0,
+                'FN': 0
+            },
+            3: {
+                'TP': 2,
+                'FP': 1,
+                'FN': 3
+            }
+        }
+        assert stats == expected_stats
+
+    def test_get_stats_counts(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(set))
+        trues = pd.Series()
+        preds = pd.Series()
+        metadata = pd.DataFrame()
+        for chunk in load_tool.load_classifications(file_path, ';', True):
+            chunk_stats = eval_tool.compute_stats_for_agg('user', chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            metadata = metadata.append(chunk[2])
+            for k, v in chunk_stats.items():
+                stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                stats[k]['TP'] = stats[k]['TP'] | v['TP']
+        stats = eval_tool.aggregate_stats(stats)
 
         expected_counts = {
             'TP': 4,
@@ -411,19 +458,20 @@ class TestEvaluationTool(object):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_one_label')
         eval_tool = EvaluationTool()
         load_tool = LoadingTool()
-        stats = defaultdict(lambda: defaultdict(int))
+        stats = defaultdict(lambda: defaultdict(set))
         trues = pd.Series()
         preds = pd.Series()
         metadata = pd.DataFrame()
         for chunk in load_tool.load_classifications(file_path, ';', True):
-            chunk_stats = eval_tool.compute_aggregated_stats('user', chunk)
+            chunk_stats = eval_tool.compute_stats_for_agg('user', chunk)
             trues = trues.append(chunk[0])
             preds = preds.append(chunk[1])
             metadata = metadata.append(chunk[2])
-            for label in chunk_stats:
-                stats[label]['FP'] += chunk_stats[label]['FP']
-                stats[label]['FN'] += chunk_stats[label]['FN']
-                stats[label]['TP'] += chunk_stats[label]['TP']
+            for k, v in chunk_stats.items():
+                stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                stats[k]['TP'] = stats[k]['TP'] | v['TP']
+        stats = eval_tool.aggregate_stats(stats)
 
         expected_counts = {
             'TP': 1,

@@ -37,15 +37,42 @@ class EvaluationTool():
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
 
+        # Remove legit label from the statistics.
+        if self.legit != None:
+            stats[self.legit]['TP'] = 0
+            stats[self.legit]['FN'] = 0
+
         return dict(stats)
 
-    def compute_aggregated_stats(self, agg_column, data_chunk):
+    def aggregate_stats(self, stats):
         """
-        Computes TPs, FPs and FNs of the given data aggregated by
+        Aggregates the prepared stats so that there are no duplicities and
+        once there is a TP for the specified user (or other aggregation value),
+        there can be no FPs or FNs.
+        :param stats: A dictionary of label dictionaries containing all TPs,
+        FPs and FNs with their associated value from the aggregation column.
+        :return: A dictionary of aggregated TPs, FPs and FNs for all labels.
+        """
+        for label in self.labels:
+            stats[label]['FP'] -= stats[label]['TP']
+            stats[label]['FN'] -= stats[label]['TP']
+
+            stats[label]['FP'] = len(stats[label]['FP'])
+            stats[label]['FN'] = len(stats[label]['FN'])
+            stats[label]['TP'] = len(stats[label]['TP'])
+
+        return dict(stats)
+
+    def compute_stats_for_agg(self, agg_column, data_chunk, relaxed=False):
+        """
+        Computes TPs, FPs and FNs of the given data prepared for aggregation by
         the specified agg_collumn.
         :param agg_column: The name of the column specifying the aggregation.
         :param data_chunk: A chunk of data containing trues and preds.
-        :return: A dictionary of stats containing TPs, FPs and FNs for all
+        :param relaxed: Do not distinguish between FP and TP if the false label
+        is still positive but of a different class.
+        :return: A dictionary of label dictionaries containing all TPs, FPs and
+        FNs with their associated value from the agg_column.
         labels.
         """
 
@@ -61,22 +88,21 @@ class EvaluationTool():
         #TODO Smelly
         self.labels = sorted(set(labels) | set(self.labels))
 
-        for i in range(len(trues)):
-            if trues[i] == preds[i]:
-                stats[trues[i]]['TP'].add(keys[i])
+        for true, pred, key in zip(trues, preds, keys):
+            if true == pred:
+                stats[true]['TP'].add(key)
             else:
-                stats[trues[i]]['FN'].add(keys[i])
-                stats[preds[i]]['FP'].add(keys[i])
+                stats[true]['FN'].add(key)
+                if relaxed and true != self.legit and pred != self.legit:
+                    stats[pred]['TP'].add(key)
+                else:
+                    stats[pred]['FP'].add(key)
 
-        for label in labels:
-            stats[label]['FP'] -= stats[label]['TP']
-            stats[label]['FN'] -= stats[label]['TP']
+        if self.legit != None:
+            stats[self.legit]['TP'] = set()
+            stats[self.legit]['FN'] = set()
 
-            stats[label]['FP'] = len(stats[label]['FP'])
-            stats[label]['FN'] = len(stats[label]['FN'])
-            stats[label]['TP'] = len(stats[label]['TP'])
-
-        return dict(stats)
+        return stats
 
     def compute_precision(self, class_label, stats):
         """

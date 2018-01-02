@@ -19,7 +19,7 @@ class SerializableClassifier():
 
 class CiscoRunner():
 
-    def execute_run(self, clas_path=None, agg_by=None):
+    def execute_run(self, clas_path=None, agg_by=None, relaxed=False):
         tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
@@ -66,7 +66,10 @@ class CiscoRunner():
                 .format(str(sampling_settings['bin_samples'])), f)
             tee('Bin count: {}'
                 .format(str(sampling_settings['bin_count'])), f)
-            tee('Seed: {}\n'.format(random_state), f)
+            tee('Seed: {}'.format(random_state), f)
+            tee('Aggregated by: {}'.format(agg_by), f)
+            tee('Relaxed: {}\n'.format(relaxed), f)
+
 
         if not clas_path:
             rfc = RFC(
@@ -100,17 +103,29 @@ class CiscoRunner():
         t_data = None
 
         eval_tool = EvaluationTool(legit=0, agg=True)
-        stats = defaultdict(lambda: defaultdict(int))
+
+        if agg_by:
+            stats = defaultdict(lambda: defaultdict(set))
+        else:
+            stats = defaultdict(lambda: defaultdict(int))
+
         for chunk in loading_tool.load_classifications(
                 predictions_output, ';', True):
             if agg_by:
-                chunk_stats = eval_tool.compute_aggregated_stats(agg_by, chunk)
+                chunk_stats = eval_tool.compute_stats_for_agg(
+                    agg_by, chunk, relaxed)
+                for k, v in chunk_stats.items():
+                    stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                    stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                    stats[k]['TP'] = stats[k]['TP'] | v['TP']
             else:
                 chunk_stats = eval_tool.compute_stats(chunk)
-            for label in chunk_stats:
-                stats[label]['FP'] += chunk_stats[label]['FP']
-                stats[label]['FN'] += chunk_stats[label]['FN']
-                stats[label]['TP'] += chunk_stats[label]['TP']
+                for label in chunk_stats:
+                    stats[label]['FP'] += chunk_stats[label]['FP']
+                    stats[label]['FN'] += chunk_stats[label]['FN']
+                    stats[label]['TP'] += chunk_stats[label]['TP']
+        if agg_by:
+            stats = eval_tool.aggregate_stats(stats)
 
         counts = eval_tool.get_stats_counts(eval_tool.labels, stats)
         with open(eval_output, 'a', encoding='utf-8') as f:
@@ -150,4 +165,4 @@ class CiscoRunner():
 
 runner = CiscoRunner()
 #runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
-runner.execute_run(agg_by=None)
+runner.execute_run(agg_by='user', relaxed=True)
