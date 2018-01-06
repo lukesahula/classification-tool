@@ -37,11 +37,6 @@ class EvaluationTool():
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
 
-        # Remove legit label from the statistics.
-        if self.legit != None:
-            stats[self.legit]['TP'] = 0
-            stats[self.legit]['FN'] = 0
-
         return dict(stats)
 
     def aggregate_stats(self, stats):
@@ -97,10 +92,6 @@ class EvaluationTool():
                     stats[pred]['TP'].add(key)
                 else:
                     stats[pred]['FP'].add(key)
-
-        if self.legit != None:
-            stats[self.legit]['TP'] = set()
-            stats[self.legit]['FN'] = set()
 
         return stats
 

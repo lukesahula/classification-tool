@@ -36,6 +36,12 @@ class ClassificationTool():
                 to_predict = t_data[0].ix[chunk]
                 preds = preds + list(self.classifier.predict(to_predict))
 
+            t_n_indexes = [i for i in t_data[1].index if t_data[1][i] == preds[i] and preds[i] == 0]
+            t_n_indexes.reverse()
+            [preds.pop(i) for i in t_n_indexes]
+            t_data[1].drop(t_data[1].index[t_n_indexes], inplace=True)
+            t_data[2].drop(t_data[2].index[t_n_indexes], inplace=True)
+
             writer.writerows(
                 zip(
                     t_data[1],

@@ -170,7 +170,7 @@ class LoadingTool():
         """
         columns = ['true', 'pred']
         if read_metadata:
-            metadata_columns = ['timestamp', 'user', 'flow']
+            metadata_columns = ['timestamp', 'host', 'user']
             columns.extend(metadata_columns)
 
         reader = pd.read_csv(
@@ -188,7 +188,7 @@ class LoadingTool():
             if read_metadata:
                 metadata = pd.DataFrame(
                     data=np.array(
-                        [record['timestamp'], record['user'], record['flow']])
+                        [record['timestamp'], record['host'], record['user']])
                         .transpose(),
                     columns=metadata_columns
                 )
