@@ -9,6 +9,7 @@ from evaluation_tool.evaluation_tool import EvaluationTool
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
 from collections import defaultdict
+import numpy as np
 
 
 class SerializableClassifier():
@@ -145,13 +146,165 @@ class CiscoRunner():
             tee('\nOverall stats:\n', f)
             tee('TPS: {}'.format(counts['TP']), f)
             tee('FPS: {}'.format(counts['FP']), f)
-            tee('FNS: {}'.format(counts['FN']), f)
+            tee('FNS: {}\n'.format(counts['FN']), f)
+
+            labels_prec_above_100 = eval_tool.get_labels_with_prec_above_thres(
+                thres=1,
+                labels=eval_tool.labels,
+                stats=stats
+            )
+            avg_recall_above_100 = eval_tool.get_avg_recall(
+                stats, par_labels=labels_prec_above_100
+            )
+            stats_counts_above_100 = eval_tool.get_stats_counts(
+                labels_prec_above_100, stats
+            )
+            tps_above_100 = [stats[l]['TP'] for l in labels_prec_above_100]
+            median_tps_above_100 = np.median(tps_above_100)
+            sum_tps_above_100 = stats_counts_above_100['TP']
+            fps_above_100 = [stats[l]['FP'] for l in labels_prec_above_100]
+            median_fps_above_100 = np.median(fps_above_100)
+            sum_fps_above_100 = stats_counts_above_100['FP']
+
+            labels_prec_above_095 = eval_tool.get_labels_with_prec_above_thres(
+                thres=0.95,
+                labels=eval_tool.labels,
+                stats=stats
+            )
+            avg_recall_above_095 = eval_tool.get_avg_recall(
+                stats, par_labels=labels_prec_above_095
+            )
+            stats_counts_above_095 = eval_tool.get_stats_counts(
+                labels_prec_above_095, stats
+            )
+            tps_above_095 = [stats[l]['TP'] for l in labels_prec_above_095]
+            median_tps_above_095 = np.median(tps_above_095)
+            sum_tps_above_095 = stats_counts_above_095['TP']
+            fps_above_095 = [stats[l]['FP'] for l in labels_prec_above_095]
+            median_fps_above_095 = np.median(fps_above_095)
+            sum_fps_above_095 = stats_counts_above_095['FP']
+
+            labels_prec_above_090 = eval_tool.get_labels_with_prec_above_thres(
+                thres=0.9,
+                labels=eval_tool.labels,
+                stats=stats
+            )
+            avg_recall_above_090 = eval_tool.get_avg_recall(
+                stats, par_labels=labels_prec_above_090
+            )
+            stats_counts_above_090 = eval_tool.get_stats_counts(
+                labels_prec_above_090, stats
+            )
+            tps_above_090 = [stats[l]['TP'] for l in labels_prec_above_090]
+            median_tps_above_090 = np.median(tps_above_090)
+            sum_tps_above_090 = stats_counts_above_090['TP']
+            fps_above_090 = [stats[l]['FP'] for l in labels_prec_above_090]
+            median_fps_above_090 = np.median(fps_above_090)
+            sum_fps_above_090 = stats_counts_above_090['FP']
+
+            labels_prec_above_080 = eval_tool.get_labels_with_prec_above_thres(
+                thres=0.8,
+                labels=eval_tool.labels,
+                stats=stats
+            )
+            avg_recall_above_080 = eval_tool.get_avg_recall(
+                stats, par_labels=labels_prec_above_080
+            )
+            stats_counts_above_080 = eval_tool.get_stats_counts(
+                labels_prec_above_080, stats
+            )
+            tps_above_080 = [stats[l]['TP'] for l in labels_prec_above_080]
+            median_tps_above_080 = np.median(tps_above_080)
+            sum_tps_above_080 = stats_counts_above_080['TP']
+            fps_above_080 = [stats[l]['FP'] for l in labels_prec_above_080]
+            median_fps_above_080 = np.median(fps_above_080)
+            sum_fps_above_080 = stats_counts_above_080['FP']
+
+            labels_prec_above_050 = eval_tool.get_labels_with_prec_above_thres(
+                thres=0.5,
+                labels=eval_tool.labels,
+                stats=stats
+            )
+            avg_recall_above_050 = eval_tool.get_avg_recall(
+                stats, par_labels=labels_prec_above_050
+            )
+            stats_counts_above_050 = eval_tool.get_stats_counts(
+                labels_prec_above_050, stats
+            )
+            tps_above_050 = [stats[l]['TP'] for l in labels_prec_above_050]
+            median_tps_above_050 = np.median(tps_above_050)
+            sum_tps_above_050 = stats_counts_above_050['TP']
+            fps_above_050 = [stats[l]['FP'] for l in labels_prec_above_050]
+            median_fps_above_050 = np.median(fps_above_050)
+            sum_fps_above_050 = stats_counts_above_050['FP']
+
+
+            tee('Number of classes with precision >= 1.00: %.0f, '
+                'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
+                'Median FPs: %.0f, Sum FPs: %.0f'
+                %(
+                    len(labels_prec_above_100),
+                    avg_recall_above_100,
+                    median_tps_above_100,
+                    sum_tps_above_100,
+                    median_fps_above_100,
+                    sum_fps_above_100
+                ),
+            f)
+            tee('Number of classes with precision >= 0.95: %.0f, '
+                'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
+                'Median FPs: %.0f, Sum FPs: %.0f'
+                %(
+                    len(labels_prec_above_095),
+                    avg_recall_above_095,
+                    median_tps_above_095,
+                    sum_tps_above_095,
+                    median_fps_above_095,
+                    sum_fps_above_095
+                ),
+            f)
+            tee('Number of classes with precision >= 0.90: %.0f, '
+                'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
+                'Median FPs: %.0f, Sum FPs: %.0f'
+                %(
+                    len(labels_prec_above_090),
+                    avg_recall_above_090,
+                    median_tps_above_090,
+                    sum_tps_above_090,
+                    median_fps_above_090,
+                    sum_fps_above_090
+                ),
+            f)
+            tee('Number of classes with precision >= 0.80: %.0f, '
+                'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
+                'Median FPs: %.0f, Sum FPs: %.0f'
+                %(
+                    len(labels_prec_above_080),
+                    avg_recall_above_080,
+                    median_tps_above_080,
+                    sum_tps_above_080,
+                    median_fps_above_080,
+                    sum_fps_above_080
+                ),
+            f)
+            tee('Number of classes with precision >= 0.50: %.0f, '
+                'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
+                'Median FPs: %.0f, Sum FPs: %.0f\n'
+                %(
+                    len(labels_prec_above_050),
+                    avg_recall_above_050,
+                    median_tps_above_050,
+                    sum_tps_above_050,
+                    median_fps_above_050,
+                    sum_fps_above_050
+                ),
+            f)
 
             tee('Individual stats:\n', f)
             tee('label\tprecis\trecall\ttps\tfps\tfns', f)
             for label in eval_tool.labels:
                 counts = eval_tool.get_stats_counts(label, stats)
-                tee('%3.0f\t%4.3f\t%4.3f %6.0f\t%6.0f\t%6.0f'
+                tee('%3.0f\t%4.3f\t%4.3f %6.0f %6.0f %6.0f'
                     %(label, eval_tool.compute_precision(label, stats),
                       eval_tool.compute_recall(label, stats),
                       counts['TP'], counts['FP'], counts['FN']), f)

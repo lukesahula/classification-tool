@@ -123,15 +123,19 @@ class EvaluationTool():
             return np.nan
         return TP / (TP + FN)
 
-    def get_avg_precision(self, stats, legit=True, nan=True):
+    def get_avg_precision(self, stats, legit=True, nan=True, par_labels=None):
         """
         Counts the average precision.
         :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
+        :parama par_labels: Compute avg precision from these labels.
         :return: Average precision.
         """
-        labels = list(self.labels)
+        if not par_labels:
+            labels = list(self.labels)
+        else:
+            labels = list(par_labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -147,15 +151,19 @@ class EvaluationTool():
         else:
             return np.nansum(precs) / len(labels)
 
-    def get_avg_recall(self, stats, legit=True, nan=True):
+    def get_avg_recall(self, stats, legit=True, nan=True, par_labels=None):
         """
         Counts the average recall.
         :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
+        :parama par_labels: Compute avg recall from these labels.
         :return: Average recall.
         """
-        labels = list(self.labels)
+        if not par_labels:
+            labels = list(self.labels)
+        else:
+            labels = list(par_labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -191,4 +199,12 @@ class EvaluationTool():
 
         return counts
 
-
+    def get_labels_with_prec_above_thres(self, thres, labels, stats):
+        """
+        Returns those labels with precision above specified threshold.
+        :param thres: Number between 0 and 1
+        :param labels: A list of labels
+        :param stats: Computed statistics (TPs, FPs, FNs for all labels)
+        :return: A list of labels.
+        """
+        return [l for l in labels if self.compute_precision(l, stats) >= thres]

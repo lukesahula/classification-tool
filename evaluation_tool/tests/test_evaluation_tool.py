@@ -122,6 +122,32 @@ class TestEvaluationTool(object):
 
         assert np.allclose(prec, prec_avg_sklearn)
 
+    def test_get_avg_precision_from_specific_labels(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
+        labels = ['a', 'b', 'c']
+        prec = eval_tool.get_avg_precision(stats=stats, par_labels=labels)
+        prec_avg_sklearn = precision_score(
+            y_true=trues,
+            y_pred=preds,
+            labels=labels,
+            average='macro'
+        )
+
+        assert np.allclose(prec, prec_avg_sklearn)
 
     def test_get_avg_recall(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
@@ -144,6 +170,32 @@ class TestEvaluationTool(object):
             y_true=trues,
             y_pred=preds,
             labels=eval_tool.labels,
+            average='macro'
+        )
+        assert np.allclose(rec, rec_avg_sklearn)
+
+    def test_get_avg_recall_from_specific_labels(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_strings')
+        eval_tool = EvaluationTool()
+        load_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+        for chunk in load_tool.load_classifications(file_path, ';'):
+            chunk_stats = eval_tool.compute_stats(chunk)
+            trues = trues.append(chunk[0])
+            preds = preds.append(chunk[1])
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
+        labels = ['a', 'b', 'c']
+        rec = eval_tool.get_avg_recall(stats=stats, par_labels=labels)
+        rec_avg_sklearn = recall_score(
+            y_true=trues,
+            y_pred=preds,
+            labels=labels,
             average='macro'
         )
         assert np.allclose(rec, rec_avg_sklearn)
@@ -480,3 +532,29 @@ class TestEvaluationTool(object):
         }
         counts = eval_tool.get_stats_counts(1, stats)
         assert expected_counts == counts
+
+    def test_get_labels_with_prec_above(self):
+        file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
+        e_tool = EvaluationTool()
+        l_tool = LoadingTool()
+        stats = defaultdict(lambda: defaultdict(int))
+        trues = pd.Series()
+        preds = pd.Series()
+
+        for chunk in l_tool.load_classifications(file_path, ';', True):
+            chunk_stats = e_tool.compute_stats(chunk)
+            for label in chunk_stats:
+                stats[label]['FP'] += chunk_stats[label]['FP']
+                stats[label]['FN'] += chunk_stats[label]['FN']
+                stats[label]['TP'] += chunk_stats[label]['TP']
+
+        prec = [e_tool.compute_precision(x, stats) for x in e_tool.labels]
+
+        threshold = 0.3
+        precs_above_threshold = e_tool.get_labels_with_prec_above_thres(
+            threshold,
+            e_tool.labels,
+            stats
+        )
+        expected = [0, 1]
+        assert expected == precs_above_threshold
