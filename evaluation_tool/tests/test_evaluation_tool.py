@@ -30,9 +30,9 @@ class TestEvaluationTool(object):
                 result[label]['TP'] += chunk_stats[label]['TP']
 
         expected = defaultdict(lambda: defaultdict(int))
-        expected[0]['TP'] = 0
+        expected[0]['TP'] = 1
         expected[0]['FP'] = 2
-        expected[0]['FN'] = 0
+        expected[0]['FN'] = 4
         expected[1]['TP'] = 5
         expected[1]['FP'] = 3
         expected[1]['FN'] = 2
@@ -341,7 +341,7 @@ class TestEvaluationTool(object):
                 [1, 2, 1, 2, 1, 1, 2, 0, 1, 0, 1, 2, 0, 1, 1],
                 [1, 2, 1, 2, 1, 1, 2, 0, 1, 0, 1, 2, 0, 1, 1]
             ]).transpose(),
-            columns=['timestamp', 'user', 'flow']
+            columns=['timestamp', 'host', 'user']
         )
 
         assert metadata.equals(expected)
@@ -405,9 +405,9 @@ class TestEvaluationTool(object):
 
         expected_stats = {
             0: {
-                'TP' : 0,
+                'TP' : 1,
                 'FP' : 1,
-                'FN' : 0
+                'FN' : 1
             },
             1: {
                 'TP' : 7,

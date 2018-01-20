@@ -171,7 +171,7 @@ class TestLoadingTool(object):
                 [1, 1, 2, 1, 2, 1, 2, 2, 2, 2],
                 [1, 1, 2, 1, 2, 1, 2, 2, 2, 2],
             ]).transpose(),
-            columns=['timestamp', 'user', 'flow']
+            columns=['timestamp', 'host', 'user']
         )
         assert metadata.equals(expected)
 
