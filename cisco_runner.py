@@ -44,8 +44,8 @@ class CiscoRunner():
 
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 10000,
-            'bin_samples': 5000,
+            'neg_samples': 100000,
+            'bin_samples': 50000,
             'seed': random_state
         }
 
@@ -165,4 +165,4 @@ class CiscoRunner():
 
 runner = CiscoRunner()
 #runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
-runner.execute_run(agg_by='user', relaxed=True)
+runner.execute_run(agg_by='user', relaxed=False)
