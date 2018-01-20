@@ -148,10 +148,10 @@ class CiscoRunner():
             tee('FNS: {}'.format(counts['FN']), f)
 
             tee('Individual stats:\n', f)
-            tee('label\tprecis\t\trecall\t\t\ttps\t\t\tfps\t\t\tfns', f)
+            tee('label\tprecis\trecall\ttps\tfps\tfns', f)
             for label in eval_tool.labels:
                 counts = eval_tool.get_stats_counts(label, stats)
-                tee('%3.0f\t\t%4.3f\t\t%4.3f\t\t%6.0f\t\t%6.0f\t\t%6.0f'
+                tee('%3.0f\t%4.3f\t%4.3f %6.0f\t%6.0f\t%6.0f'
                     %(label, eval_tool.compute_precision(label, stats),
                       eval_tool.compute_recall(label, stats),
                       counts['TP'], counts['FP'], counts['FN']), f)
