@@ -20,7 +20,9 @@ class SerializableClassifier():
 
 class CiscoRunner():
 
-    def execute_run(self, clas_path=None, agg_by=None, relaxed=False):
+    def execute_run(self, clsfr=None, agg_by=None, relaxed=False,
+                    dump=True, output_dir=None
+    ):
         tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
@@ -28,12 +30,18 @@ class CiscoRunner():
             'classification_tool/datasets/cisco_datasets/data/test_t'
         )
 
-        output_dir = datetime.datetime.now().isoformat()
-        output_dir = os.path.join('runner_outputs', output_dir)
+        clsfr_output = os.path.join(output_dir, 'clsfr')
+
+        if not agg_by:
+            output_dir = os.path.join(output_dir, 'unaggregated')
+        elif not relaxed:
+            output_dir = os.path.join(output_dir, 'agg_by_{}'.format(agg_by))
+        else:
+            output_dir = os.path.join(output_dir, 'agg_by_{}_relaxed'
+                                      .format(agg_by))
         os.makedirs(output_dir)
         eval_output = os.path.join(output_dir, 'eval')
         predictions_output = os.path.join(output_dir, 'clas')
-        clsfr_output = os.path.join(output_dir, 'clsfr')
 
         # Configuration for the RFC
         n_estimators = 100
@@ -72,7 +80,7 @@ class CiscoRunner():
             tee('Relaxed: {}\n'.format(relaxed), f)
 
 
-        if not clas_path:
+        if not clsfr:
             rfc = RFC(
                 n_estimators=n_estimators,
                 max_features=max_features,
@@ -87,10 +95,13 @@ class CiscoRunner():
             tr_data = loading_tool.quantize_data(tr_data)
             clas_tool.train_classifier(tr_data)
             tr_data = None
-        else:
-            ser_classifier = joblib.load(clas_path)
+        elif os.path.isfile(clsfr):
+            ser_classifier = joblib.load(clsfr)
             loading_tool = LoadingTool(sampling_settings, ser_classifier.bins)
             clas_tool = ClassificationTool(ser_classifier.classifier)
+        else:
+            loading_tool = LoadingTool(sampling_settings, clsfr.bins)
+            clas_tool = ClassificationTool(clsfr.classifier)
 
         if os.path.isfile(predictions_output):
             os.remove(predictions_output)
@@ -314,8 +325,26 @@ class CiscoRunner():
             loading_tool.bins
         )
 
-        joblib.dump(ser_classifier, clsfr_output, compress=9)
+        if dump:
+            joblib.dump(ser_classifier, clsfr_output, compress=9)
+        else:
+            return clsfr
 
 runner = CiscoRunner()
-#runner.execute_run(clas_path='classification_tool/outputs/rfc.cisco.clsfr')
-runner.execute_run(agg_by='user', relaxed=False)
+
+output_dir = datetime.datetime.now().isoformat()
+output_dir = os.path.join('runner_outputs', output_dir)
+os.makedirs(output_dir)
+
+clsfr = runner.execute_run(
+    clsfr=None, agg_by=None, relaxed=False,
+    dump=False, output_dir=output_dir
+)
+runner.execute_run(
+    clsfr=clsfr, agg_by='user', relaxed=False,
+    dump=False, output_dir=output_dir
+)
+runner.execute_run(
+    clsfr=clsfr, agg_by='user', relaxed=True,
+    dump=True, output_dir=output_dir
+)
