@@ -14,7 +14,8 @@ class TestLoadingTool(object):
             'bin_count': 16,
             'neg_samples': 2,
             'bin_samples': 2,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
         result = []
@@ -37,14 +38,15 @@ class TestLoadingTool(object):
 
         result = data, labels, metadata
 
-        expected_labels = [0, 0, 0, 1, 2, 3]
+        expected_labels = [0, 0, 0, 1, 2, 3, 4]
         expected_features = [
             [0, 0, 0, 0],
             [0, 0, 0, 0],
             [0, 0, 0, 0],
             [1, 1, 1, 1],
             [2, 2, 2, 2],
-            [3, 3, 3, 3]
+            [3, 3, 3, 3],
+            [np.nan, 4, np.nan, 4]
         ]
         expected_metadata = [
             [0, 0, 0],
@@ -52,7 +54,8 @@ class TestLoadingTool(object):
             [0, 0, 0],
             [1, 1, 1],
             [2, 2, 2],
-            [3, 3, 3]
+            [3, 3, 3],
+            [4, 4, 4]
         ]
         expected = (
             pd.DataFrame(expected_features),
@@ -63,31 +66,122 @@ class TestLoadingTool(object):
                 and expected[1].equals(result[1])
                 and expected[2].equals(result[2]))
 
-
-    def test_load_training_data(self):
+    def test_load_training_data_no_nan_value(self):
         path = DATA_DIR
         sampling_settings = {
             'bin_count': 16,
             'neg_samples': 2,
             'bin_samples': 2,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
         result = loading_tool.load_training_data(path)
-        expected_labels = [0, 0, 1, 2, 3]
+        series = []
+        for col in result[0]:
+            series.append(pd.to_numeric(result[0][col]))
+        result = pd.DataFrame(series).transpose(), result[1], result[2]
+        expected_labels = [0, 0, 1, 2, 3, 4]
         expected_features = [
             [0, 0, 0, 0],
             [0, 0, 0, 0],
             [1, 1, 1, 1],
             [2, 2, 2, 2],
-            [3, 3, 3, 3]
+            [3, 3, 3, 3],
+            [-1000000, 4, -1000000, 4]
         ]
+        expected_features = np.array(expected_features, np.float64)
         expected_metadata = [
             [0, 0, 0],
             [0, 0, 0],
             [1, 1, 1],
             [2, 2, 2],
-            [3, 3, 3]
+            [3, 3, 3],
+            [4, 4, 4]
+        ]
+        expected = (
+            pd.DataFrame(expected_features),
+            pd.Series(expected_labels),
+            pd.DataFrame(expected_metadata)
+        )
+        assert (expected[0].equals(result[0])
+                and expected[1].equals(result[1])
+                and expected[2].equals(result[2]))
+
+    def test_load_training_data_mean_nan_value(self):
+        path = DATA_DIR
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 2,
+            'bin_samples': 2,
+            'seed': 0,
+            'nan_value': 'mean'
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        result = loading_tool.load_training_data(path)
+        series = []
+        for col in result[0]:
+            series.append(pd.to_numeric(result[0][col]))
+        result = pd.DataFrame(series).transpose(), result[1], result[2]
+        expected_labels = [0, 0, 1, 2, 3, 4]
+        expected_features = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [2, 2, 2, 2],
+            [3, 3, 3, 3],
+            [1.2, 4, 1.2, 4]
+        ]
+        expected_features = np.array(expected_features, np.float64)
+        expected_metadata = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+            [4, 4, 4]
+        ]
+        expected = (
+            pd.DataFrame(expected_features),
+            pd.Series(expected_labels),
+            pd.DataFrame(expected_metadata)
+        )
+        assert (expected[0].equals(result[0])
+                and expected[1].equals(result[1])
+                and expected[2].equals(result[2]))
+
+    def test_load_training_data_median_nan_value(self):
+        path = DATA_DIR
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 2,
+            'bin_samples': 2,
+            'seed': 0,
+            'nan_value': 'median'
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        result = loading_tool.load_training_data(path)
+        series = []
+        for col in result[0]:
+            series.append(pd.to_numeric(result[0][col]))
+        result = pd.DataFrame(series).transpose(), result[1], result[2]
+        expected_labels = [0, 0, 1, 2, 3, 4]
+        expected_features = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [2, 2, 2, 2],
+            [3, 3, 3, 3],
+            [1, 4, 1, 4]
+        ]
+        expected_features = np.array(expected_features, np.float64)
+        expected_metadata = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+            [4, 4, 4]
         ]
         expected = (
             pd.DataFrame(expected_features),
@@ -104,7 +198,8 @@ class TestLoadingTool(object):
             'bin_count': 16,
             'neg_samples': None,
             'bin_samples': 3,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)
@@ -128,7 +223,8 @@ class TestLoadingTool(object):
             'bin_count': 16,
             'neg_samples': None,
             'bin_samples': 3,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)

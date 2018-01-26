@@ -18,7 +18,8 @@ class TestClassificationTool(object):
             'bin_count': 16,
             'neg_samples': 7,
             'bin_samples': 20,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
         clas_tool = ClassificationTool(rfc)
@@ -37,7 +38,8 @@ class TestClassificationTool(object):
             'bin_count': 16,
             'neg_samples': 7,
             'bin_samples': 20,
-            'seed': 0
+            'seed': 0,
+            'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
         clas_tool = ClassificationTool(rfc)

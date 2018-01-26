@@ -20,8 +20,19 @@ class SerializableClassifier():
 
 class CiscoRunner():
 
+    def __compute_testing_means(self, loading_tool, t_path):
+        cum_sums = 51 * [0]
+        data_len = 0
+        for t_data in loading_tool.load_testing_data(t_path):
+            cum_sums += t_data[0].sum()
+            data_len += len(t_data[0])
+
+        means = [cum_sum / data_len for cum_sum in cum_sums]
+        return means
+
+
     def execute_run(self, clsfr=None, agg_by=None, relaxed=False,
-                    dump=True, output_dir=None
+                    dump=True, output_dir=None, nan_value=None
     ):
         tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
@@ -50,12 +61,14 @@ class CiscoRunner():
         criterion = 'entropy'
         n_jobs = -1
         random_state = 0
+        nan_value = nan_value
 
         sampling_settings = {
             'bin_count': 16,
             'neg_samples': 100000,
             'bin_samples': 50000,
-            'seed': random_state
+            'seed': random_state,
+            'nan_value': nan_value
         }
 
         with open(eval_output, 'w', encoding='utf-8') as f:
@@ -106,7 +119,28 @@ class CiscoRunner():
         if os.path.isfile(predictions_output):
             os.remove(predictions_output)
 
+        if nan_value == 'mean':
+            means = self.__compute_testing_means(loading_tool, t_path)
+
         for t_data in loading_tool.load_testing_data(t_path):
+            if nan_value == 'mean':
+                for col in t_data[0]:
+                    t_data[0][col].replace(
+                        to_replace=np.nan,
+                        value=means[col],
+                        inplace=True
+                    )
+                t_data[0].replace(
+                    to_replace=np.nan,
+                    value=-1000000,
+                    inplace=True
+                )
+            else:
+                t_data[0].replace(
+                    to_replace=np.nan,
+                    value=-1000000,
+                    inplace=True
+                )
             t_data = loading_tool.quantize_data(t_data)
             clas_tool.save_predictions(
                 t_data,
@@ -338,7 +372,7 @@ os.makedirs(output_dir)
 
 clsfr = runner.execute_run(
     clsfr=None, agg_by=None, relaxed=False,
-    dump=False, output_dir=output_dir
+    dump=False, output_dir=output_dir, nan_value='mean'
 )
 runner.execute_run(
     clsfr=clsfr, agg_by='user', relaxed=False,

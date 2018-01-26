@@ -14,6 +14,23 @@ class LoadingTool():
             self.bin_samples = sampling_settings['bin_samples']
             self.neg_samples = sampling_settings['neg_samples']
             self.seed = sampling_settings['seed']
+            self.nan_value = sampling_settings['nan_value']
+
+    def __replace_nans(self, data, value):
+        """
+        Replaces missing values by mean, median or a constant value outside of
+        the feature interval.
+        :param data: Dataframe
+        :param mean: True/False
+        :return: Dataframe
+        """
+        if not value:
+            return data.replace(to_replace=np.nan, value=-1000000)
+        if value == 'mean':
+            data.replace(to_replace=np.nan, value=data.mean(), inplace=True)
+            return data.replace(to_replace=np.nan, value=-1000000)
+        if value == 'median':
+            return data.replace(to_replace=np.nan, value=data.median())
 
     def load_training_data(self, path):
         """
@@ -36,13 +53,6 @@ class LoadingTool():
             )]
         )
 
-        # Replace nans
-        data.replace(
-            to_replace=np.nan,
-            value=-1000000,
-            inplace=True
-        )
-
         metadata = data[data.columns[:3]]
         labels = data[data.columns[3]]
         data = data[data.columns[4:]]
@@ -50,6 +60,8 @@ class LoadingTool():
         metadata.reset_index(drop=True, inplace=True)
         labels.reset_index(drop=True, inplace=True)
         data.reset_index(drop=True, inplace=True)
+
+        data = self.__replace_nans(data, self.nan_value)
 
         return data, labels, metadata
 
@@ -66,13 +78,6 @@ class LoadingTool():
         files += glob.glob(os.path.join(path, 'pos', '*.gz'))
         for f in files:
             data = pd.read_csv(f, sep='\t', header=None)
-
-            # Replace nans
-            data.replace(
-                to_replace=np.nan,
-                value=-1000000,
-                inplace=True
-            )
 
             metadata = data[data.columns[:3]]
             labels = data[data.columns[3]]
