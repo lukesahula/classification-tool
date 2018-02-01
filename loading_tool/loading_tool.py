@@ -16,6 +16,9 @@ class LoadingTool():
             self.seed = sampling_settings['seed']
             self.nan_value = sampling_settings['nan_value']
 
+        self.means = None
+        self.medians = None
+
     def __replace_nans(self, data, value):
         """
         Replaces missing values by mean, median or a constant value outside of
@@ -27,10 +30,21 @@ class LoadingTool():
         if not value:
             return data.replace(to_replace=np.nan, value=-1000000)
         if value == 'mean':
-            data.replace(to_replace=np.nan, value=data.mean(), inplace=True)
+            if self.means is None:
+                self.means = data.mean()
+            for col in data:
+                data[col].replace(
+                    to_replace=np.nan, value=self.means[col], inplace=True
+                )
             return data.replace(to_replace=np.nan, value=-1000000)
         if value == 'median':
-            return data.replace(to_replace=np.nan, value=data.median())
+            if self.medians is None:
+                self.medians = data.median()
+            for col in data:
+                data[col].replace(
+                    to_replace=np.nan, value=self.medians[col], inplace=True
+                )
+            return data.replace(to_replace=np.nan, value=-1000000)
 
     def load_training_data(self, path):
         """
@@ -83,6 +97,8 @@ class LoadingTool():
             labels = data[data.columns[3]]
             data = data[data.columns[4:]]
             data.rename(columns=lambda x: x-4, inplace=True)
+
+            data = self.__replace_nans(data, self.nan_value)
 
             yield data, labels, metadata
 

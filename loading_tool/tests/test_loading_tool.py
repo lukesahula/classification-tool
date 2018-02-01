@@ -36,7 +36,13 @@ class TestLoadingTool(object):
         labels.reset_index(drop=True, inplace=True)
         metadata.reset_index(drop=True, inplace=True)
 
+
+        series = []
+        for col in result[0]:
+            series.append(pd.to_numeric(result[0][col]))
+
         result = data, labels, metadata
+        result = pd.DataFrame(series).transpose(), result[1], result[2]
 
         expected_labels = [0, 0, 0, 1, 2, 3, 4]
         expected_features = [
@@ -46,8 +52,9 @@ class TestLoadingTool(object):
             [1, 1, 1, 1],
             [2, 2, 2, 2],
             [3, 3, 3, 3],
-            [np.nan, 4, np.nan, 4]
+            [-1000000, 4, -1000000, 4]
         ]
+        expected_features = np.array(expected_features, np.float64)
         expected_metadata = [
             [0, 0, 0],
             [0, 0, 0],
