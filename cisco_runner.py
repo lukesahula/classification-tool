@@ -6,6 +6,7 @@ from utils.utils import tee
 from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
+from classifiers.decision_tree import DecisionTree
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
 from collections import defaultdict
@@ -94,6 +95,12 @@ class CiscoRunner():
 
 
         if not clsfr:
+            decision_tree = DecisionTree(
+                max_features='sqrt',
+                criterion='entropy',
+                min_samples_split=2,
+                random_state=0
+            )
             rfc = RFC(
                 n_estimators=n_estimators,
                 max_features=max_features,
@@ -119,28 +126,7 @@ class CiscoRunner():
         if os.path.isfile(predictions_output):
             os.remove(predictions_output)
 
-        if nan_value == 'mean':
-            means = self.__compute_testing_means(loading_tool, t_path)
-
         for t_data in loading_tool.load_testing_data(t_path):
-            if nan_value == 'mean':
-                for col in t_data[0]:
-                    t_data[0][col].replace(
-                        to_replace=np.nan,
-                        value=means[col],
-                        inplace=True
-                    )
-                t_data[0].replace(
-                    to_replace=np.nan,
-                    value=-1000000,
-                    inplace=True
-                )
-            else:
-                t_data[0].replace(
-                    to_replace=np.nan,
-                    value=-1000000,
-                    inplace=True
-                )
             t_data = loading_tool.quantize_data(t_data)
             clas_tool.save_predictions(
                 t_data,
@@ -370,15 +356,18 @@ output_dir = datetime.datetime.now().isoformat()
 output_dir = os.path.join('runner_outputs', output_dir)
 os.makedirs(output_dir)
 
-clsfr = runner.execute_run(
-    clsfr=None, agg_by=None, relaxed=False,
-    dump=False, output_dir=output_dir, nan_value='mean'
-)
-runner.execute_run(
-    clsfr=clsfr, agg_by='user', relaxed=False,
-    dump=False, output_dir=output_dir
-)
-runner.execute_run(
-    clsfr=clsfr, agg_by='user', relaxed=True,
-    dump=True, output_dir=output_dir
-)
+runner.execute_run(clsfr=None, agg_by=None, relaxed=False,
+                   dump=False, output_dir=output_dir, nan_value='mean')
+
+#clsfr = runner.execute_run(
+#    clsfr=None, agg_by=None, relaxed=False,
+#    dump=False, output_dir=output_dir, nan_value='mean'
+#)
+#runner.execute_run(
+#    clsfr=clsfr, agg_by='user', relaxed=False,
+#    dump=False, output_dir=output_dir
+#)
+#runner.execute_run(
+#    clsfr=clsfr, agg_by='user', relaxed=True,
+#    dump=True, output_dir=output_dir
+#)
