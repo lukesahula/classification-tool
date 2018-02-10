@@ -25,19 +25,21 @@ class DecisionNode():
 
 class DecisionTree():
     def __init__(
-            self, max_features, min_samples_split, criterion, random_state
+            self, max_features, min_samples_split, random_state
     ):
         self.root = None
         self.max_features = max_features
         self.min_samples_split = min_samples_split
-        self.criterion = criterion
         self.random_state = random_state
 
     def fit(self, feature_vectors, labels):
         self.root = self.__build_tree__(feature_vectors, labels)
 
-    def predict(self, feature_vector):
-        return self.root.evaluate(feature_vector)
+    def predict(self, observations):
+        predictions = []
+        for index, row in observations.iterrows():
+            predictions.append(self.root.evaluate(row))
+        return predictions
 
     def __build_tree__(self, feature_vectors, labels):
         if self.__should_create_leaf_node__(feature_vectors, labels):
@@ -49,14 +51,15 @@ class DecisionTree():
             feature_vectors, labels, attr, value
         )
         left_child = self.__build_tree__(dataset_left[0], dataset_left[1])
-        right_child = self.__build_tree__(dataset_right[0], dataset_right[1])
+        if len(dataset_right[1] == 0):
+            print('right_happened')
+            ## TODO figure this shit out
+            right_child = self.__create_leaf_node__(dataset_right[1])
+        else:
+            right_child = self.__build_tree__(dataset_right[0], dataset_right[1])
         return DecisionNode(left_child, right_child, attr, value)
 
-
     def __should_create_leaf_node__(self, feature_vectors, labels):
-        # TODO prozkoumat?
-        if len(labels) == 0:
-            return False
         if len(set(labels)) == 1:
             return True
         if len(feature_vectors.drop_duplicates()) == 1:
@@ -95,19 +98,14 @@ class DecisionTree():
 
     def __split_dataset__(self, feature_vectors, labels, attr, value):
         threshold = feature_vectors[attr] < value
-        dataset_left = feature_vectors[threshold]
-        dataset_right = feature_vectors[~threshold]
-        indices_left = dataset_left.index
-        indices_right = dataset_right.index
-        labels_left = labels[indices_left]
-        labels_right = labels[indices_right]
-        dataset_left = dataset_left, labels_left
-        dataset_right = dataset_right, labels_right
-        return dataset_left, dataset_right
+        return ((feature_vectors[threshold], labels[threshold]),
+                (feature_vectors[~threshold], labels[~threshold]))
 
     def __compute_gain__(self, counts_l, counts_r):
         size_l = sum(counts_l['count'])
         size_r = sum(counts_r['count'])
+        if size_r == 0 or size_l == 0:
+            return float('-inf')
         gain = - ((size_l * entropy(counts_l['count']) +
                   size_r * entropy(counts_r['count'])) / (size_l + size_r))
         return gain

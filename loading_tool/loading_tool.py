@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import glob
 import random
+from collections import defaultdict
 
 class LoadingTool():
 
@@ -19,6 +20,22 @@ class LoadingTool():
         self.means = None
         self.medians = None
 
+    def compute_nans_per_class_ratio(self, data):
+        counts_per_row = data[0].apply(lambda x: x.count(), axis=1)
+        nan_counts_per_row = []
+        for c in counts_per_row:
+            nan_counts_per_row.append(len(data[0].columns) - c)
+
+        total_counts = defaultdict(int)
+        nan_counts = defaultdict(int)
+        for nan, v, l in zip(nan_counts_per_row, counts_per_row, data[1]):
+            total_counts[l] += nan + v
+            nan_counts[l] += nan
+
+        ratios = dict((n, nan_counts.get(n, 0) / total_counts.get(n, 0))
+                      for n in set(nan_counts) | set(total_counts))
+        return ratios
+
     def __replace_nans(self, data, value):
         """
         Replaces missing values by mean, median or a constant value outside of
@@ -28,6 +45,8 @@ class LoadingTool():
         :return: Dataframe
         """
         if not value:
+            return data
+        if value == 'const':
             return data.replace(to_replace=np.nan, value=-1000000)
         if value == 'mean':
             if self.means is None:

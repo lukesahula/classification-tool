@@ -21,17 +21,6 @@ class SerializableClassifier():
 
 class CiscoRunner():
 
-    def __compute_testing_means(self, loading_tool, t_path):
-        cum_sums = 51 * [0]
-        data_len = 0
-        for t_data in loading_tool.load_testing_data(t_path):
-            cum_sums += t_data[0].sum()
-            data_len += len(t_data[0])
-
-        means = [cum_sum / data_len for cum_sum in cum_sums]
-        return means
-
-
     def execute_run(self, clsfr=None, agg_by=None, relaxed=False,
                     dump=True, output_dir=None, nan_value=None
     ):
@@ -97,7 +86,6 @@ class CiscoRunner():
         if not clsfr:
             decision_tree = DecisionTree(
                 max_features='sqrt',
-                criterion='entropy',
                 min_samples_split=2,
                 random_state=0
             )
@@ -110,7 +98,7 @@ class CiscoRunner():
                 random_state=random_state
             )
             loading_tool = LoadingTool(sampling_settings)
-            clas_tool = ClassificationTool(rfc)
+            clas_tool = ClassificationTool(decision_tree)
             tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
             clas_tool.train_classifier(tr_data)
@@ -357,7 +345,7 @@ output_dir = os.path.join('runner_outputs', output_dir)
 os.makedirs(output_dir)
 
 runner.execute_run(clsfr=None, agg_by=None, relaxed=False,
-                   dump=False, output_dir=output_dir, nan_value='mean')
+                   dump=False, output_dir=output_dir, nan_value='const')
 
 #clsfr = runner.execute_run(
 #    clsfr=None, agg_by=None, relaxed=False,
@@ -365,9 +353,9 @@ runner.execute_run(clsfr=None, agg_by=None, relaxed=False,
 #)
 #runner.execute_run(
 #    clsfr=clsfr, agg_by='user', relaxed=False,
-#    dump=False, output_dir=output_dir
+#    dump=False, output_dir=output_dir, nan_value='mean'
 #)
 #runner.execute_run(
 #    clsfr=clsfr, agg_by='user', relaxed=True,
-#    dump=True, output_dir=output_dir
+#    dump=True, output_dir=output_dir, nan_value='mean'
 #)
