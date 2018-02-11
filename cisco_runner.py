@@ -22,8 +22,7 @@ class SerializableClassifier():
 class CiscoRunner():
 
     def execute_run(self, clsfr=None, agg_by=None, relaxed=False,
-                    dump=True, output_dir=None, nan_value=None
-    ):
+                    dump=True, output_dir=None, nan_value=None):
         tr_path = (
             'classification_tool/datasets/cisco_datasets/data/test_tr'
         )
@@ -81,7 +80,6 @@ class CiscoRunner():
             tee('Seed: {}'.format(random_state), f)
             tee('Aggregated by: {}'.format(agg_by), f)
             tee('Relaxed: {}\n'.format(relaxed), f)
-
 
         if not clsfr:
             decision_tree = DecisionTree(
@@ -257,76 +255,76 @@ class CiscoRunner():
             median_fps_above_050 = np.median(fps_above_050)
             sum_fps_above_050 = stats_counts_above_050['FP']
 
-
             tee('Number of classes with precision >= 1.00: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f'
-                %(
+                % (
                     len(labels_prec_above_100),
                     avg_recall_above_100,
                     median_tps_above_100,
                     sum_tps_above_100,
                     median_fps_above_100,
                     sum_fps_above_100
-                ),
-            f)
+                    ),
+                f)
             tee('Number of classes with precision >= 0.95: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f'
-                %(
+                % (
                     len(labels_prec_above_095),
                     avg_recall_above_095,
                     median_tps_above_095,
                     sum_tps_above_095,
                     median_fps_above_095,
                     sum_fps_above_095
-                ),
-            f)
+                    ),
+                f)
             tee('Number of classes with precision >= 0.90: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f'
-                %(
+                % (
                     len(labels_prec_above_090),
                     avg_recall_above_090,
                     median_tps_above_090,
                     sum_tps_above_090,
                     median_fps_above_090,
                     sum_fps_above_090
-                ),
-            f)
+                    ),
+                f)
             tee('Number of classes with precision >= 0.80: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f'
-                %(
+                % (
                     len(labels_prec_above_080),
                     avg_recall_above_080,
                     median_tps_above_080,
                     sum_tps_above_080,
                     median_fps_above_080,
                     sum_fps_above_080
-                ),
-            f)
+                    ),
+                f)
             tee('Number of classes with precision >= 0.50: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f\n'
-                %(
+                % (
                     len(labels_prec_above_050),
                     avg_recall_above_050,
                     median_tps_above_050,
                     sum_tps_above_050,
                     median_fps_above_050,
                     sum_fps_above_050
-                ),
-            f)
+                    ),
+                f)
 
             tee('Individual stats:\n', f)
             tee('label\tprecis\trecall\ttps\tfps\tfns', f)
             for label in eval_tool.labels:
                 counts = eval_tool.get_stats_counts(label, stats)
                 tee('%3.0f\t%4.3f\t%4.3f %6.0f %6.0f %6.0f'
-                    %(label, eval_tool.compute_precision(label, stats),
-                      eval_tool.compute_recall(label, stats),
-                      counts['TP'], counts['FP'], counts['FN']), f)
+                    % (label, eval_tool.compute_precision(label, stats),
+                        eval_tool.compute_recall(label, stats),
+                        counts['TP'], counts['FP'], counts['FN']),
+                    f)
 
         ser_classifier = SerializableClassifier(
             clas_tool.classifier,
@@ -338,6 +336,7 @@ class CiscoRunner():
         else:
             return clsfr
 
+
 runner = CiscoRunner()
 
 output_dir = datetime.datetime.now().isoformat()
@@ -347,15 +346,15 @@ os.makedirs(output_dir)
 runner.execute_run(clsfr=None, agg_by=None, relaxed=False,
                    dump=False, output_dir=output_dir, nan_value='const')
 
-#clsfr = runner.execute_run(
+# clsfr = runner.execute_run(
 #    clsfr=None, agg_by=None, relaxed=False,
 #    dump=False, output_dir=output_dir, nan_value='mean'
-#)
-#runner.execute_run(
+# )
+# runner.execute_run(
 #    clsfr=clsfr, agg_by='user', relaxed=False,
 #    dump=False, output_dir=output_dir, nan_value='mean'
-#)
-#runner.execute_run(
+# )
+# runner.execute_run(
 #    clsfr=clsfr, agg_by='user', relaxed=True,
 #    dump=True, output_dir=output_dir, nan_value='mean'
-#)
+# )

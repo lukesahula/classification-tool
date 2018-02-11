@@ -5,6 +5,7 @@ import glob
 import random
 from collections import defaultdict
 
+
 class LoadingTool():
 
     def __init__(self, sampling_settings=None, bins=None):
@@ -139,7 +140,6 @@ class LoadingTool():
             data = pd.concat([data, sampled])
         return data
 
-
     def __sample_indices(self, indices, samples_count):
         """
         Creates a random sample of the datasets indices
@@ -148,7 +148,6 @@ class LoadingTool():
         """
         random.seed(self.seed)
         return random.sample(indices, samples_count)
-
 
     def __compute_bins(self, dataset):
         """
@@ -228,8 +227,11 @@ class LoadingTool():
             if read_metadata:
                 metadata = pd.DataFrame(
                     data=np.array(
-                        [record['timestamp'], record['host'], record['user']])
-                        .transpose(),
+                        [
+                            record['timestamp'],
+                            record['host'],
+                            record['user']
+                        ]).transpose(),
                     columns=metadata_columns
                 )
                 data_tuple = trues, preds, metadata
