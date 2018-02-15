@@ -6,8 +6,8 @@ from loading_tool.loading_tool import *
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets'))
 
-class TestLoadingTool(object):
 
+class TestLoadingTool(object):
     def test_compute_nans_per_class_ratio(self):
         path = DATA_DIR
         sampling_settings = {
@@ -18,13 +18,18 @@ class TestLoadingTool(object):
             'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
-        result = loading_tool.load_training_data(path)
-        series = []
-        for col in result[0]:
-            series.append(pd.to_numeric(result[0][col]))
-        data = pd.DataFrame(series).transpose(), result[1], result[2]
+        nan_counts_total = defaultdict(int)
+        class_counts_total = defaultdict(int)
+        for t_data in loading_tool.load_testing_data(path):
+            nan_counts, class_counts = t_data[3]
+            for k in nan_counts.keys():
+                nan_counts_total[k] += nan_counts[k]
+                class_counts_total[k] += class_counts[k]
 
-        nan_ratio = loading_tool.compute_nans_per_class_ratio(data)
+        nan_ratios = dict(
+            (n, nan_counts_total[n] / class_counts_total[n])
+            for n in set(nan_counts_total) | set(class_counts_total)
+        )
         expected = {
             0: 0,
             1: 0.75,
@@ -32,8 +37,7 @@ class TestLoadingTool(object):
             3: 0.25,
             4: 0.5
         }
-        assert nan_ratio == expected
-
+        assert nan_ratios == expected
 
     def test_load_testing_data(self):
         path = DATA_DIR
@@ -62,7 +66,6 @@ class TestLoadingTool(object):
         data.reset_index(drop=True, inplace=True)
         labels.reset_index(drop=True, inplace=True)
         metadata.reset_index(drop=True, inplace=True)
-
 
         series = []
         for col in result[0]:
@@ -304,4 +307,3 @@ class TestLoadingTool(object):
             columns=['timestamp', 'host', 'user']
         )
         assert metadata.equals(expected)
-

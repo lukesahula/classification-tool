@@ -21,7 +21,7 @@ class LoadingTool():
         self.means = None
         self.medians = None
 
-    def compute_nans_per_class_ratio(self, data):
+    def __compute_nan_counts_per_class(self, data):
         counts_per_row = data[0].apply(lambda x: x.count(), axis=1)
         nan_counts_per_row = []
         for c in counts_per_row:
@@ -32,10 +32,7 @@ class LoadingTool():
         for nan, v, l in zip(nan_counts_per_row, counts_per_row, data[1]):
             total_counts[l] += nan + v
             nan_counts[l] += nan
-
-        ratios = dict((n, nan_counts.get(n, 0) / total_counts.get(n, 0))
-                      for n in set(nan_counts) | set(total_counts))
-        return ratios
+        return nan_counts, total_counts
 
     def __replace_nans(self, data, value):
         """
@@ -118,9 +115,10 @@ class LoadingTool():
             data = data[data.columns[4:]]
             data.rename(columns=lambda x: x-4, inplace=True)
 
+            nan_ratios = self.__compute_nan_counts_per_class((data, labels))
             data = self.__replace_nans(data, self.nan_value)
 
-            yield data, labels, metadata
+            yield data, labels, metadata, nan_ratios
 
     def __sample_negatives(self, files):
         """

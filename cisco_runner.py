@@ -20,7 +20,6 @@ class SerializableClassifier():
 
 
 class CiscoRunner():
-
     def execute_run(self, clsfr=None, agg_by=None, relaxed=False,
                     dump=True, output_dir=None, nan_value=None):
         tr_path = (
@@ -96,7 +95,7 @@ class CiscoRunner():
                 random_state=random_state
             )
             loading_tool = LoadingTool(sampling_settings)
-            clas_tool = ClassificationTool(decision_tree)
+            clas_tool = ClassificationTool(rfc)
             tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
             clas_tool.train_classifier(tr_data)
@@ -112,13 +111,24 @@ class CiscoRunner():
         if os.path.isfile(predictions_output):
             os.remove(predictions_output)
 
+        nan_counts_total = defaultdict(int)
+        class_counts_total = defaultdict(int)
         for t_data in loading_tool.load_testing_data(t_path):
+            nan_counts, class_counts = t_data[3]
+            for k in nan_counts.keys():
+                nan_counts_total[k] += nan_counts[k]
+                class_counts_total[k] += class_counts[k]
+
             t_data = loading_tool.quantize_data(t_data)
             clas_tool.save_predictions(
                 t_data,
                 predictions_output,
             )
         t_data = None
+        nan_ratios = dict(
+            (n, nan_counts_total[n] / class_counts_total[n])
+            for n in set(nan_counts_total) | set(class_counts_total)
+        )
 
         eval_tool = EvaluationTool(legit=0, agg=True)
 
@@ -317,13 +327,14 @@ class CiscoRunner():
                 f)
 
             tee('Individual stats:\n', f)
-            tee('label\tprecis\trecall\ttps\tfps\tfns', f)
+            tee('label\tprecis\trecall\ttps\tfps\tfns\tnan_ratio', f)
             for label in eval_tool.labels:
                 counts = eval_tool.get_stats_counts(label, stats)
-                tee('%3.0f\t%4.3f\t%4.3f %6.0f %6.0f %6.0f'
+                tee('%3.0f\t%4.3f\t%4.3f %6.0f %6.0f %6.0f\t%1.3f'
                     % (label, eval_tool.compute_precision(label, stats),
                         eval_tool.compute_recall(label, stats),
-                        counts['TP'], counts['FP'], counts['FN']),
+                        counts['TP'], counts['FP'], counts['FN'],
+                        nan_ratios.get(label), 0),
                     f)
 
         ser_classifier = SerializableClassifier(
