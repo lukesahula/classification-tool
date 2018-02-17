@@ -9,8 +9,8 @@ from loading_tool.loading_tool import LoadingTool
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets'))
 
-class TestClassificationTool(object):
 
+class TestClassificationTool(object):
     def test_train_classifier(self):
         tr_path = os.path.join(DATA_DIR, 'test_tr')
         rfc = RFC(n_estimators=100, criterion="entropy", n_jobs=-1)

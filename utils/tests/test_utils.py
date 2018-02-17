@@ -3,6 +3,8 @@ import pytest
 from utils.utils import tee
 
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
+
+
 class TestUtils(object):
     def test_tee(self):
         text = 'hello_world'

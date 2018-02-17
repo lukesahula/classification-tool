@@ -7,9 +7,7 @@ from collections import defaultdict
 
 
 class LoadingTool():
-
     def __init__(self, sampling_settings=None, bins=None):
-
         self.bins = bins
         if sampling_settings:
             self.bin_count = sampling_settings['bin_count']

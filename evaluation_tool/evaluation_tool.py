@@ -4,12 +4,11 @@ from sklearn.metrics import confusion_matrix
 
 import numpy as np
 
-class EvaluationTool():
 
-    def __init__(self, legit=None, agg=False):
+class EvaluationTool():
+    def __init__(self, legit=None):
         self.legit = legit
         self.labels = []
-
 
     def compute_stats(self, data_chunk):
         """
@@ -20,19 +19,16 @@ class EvaluationTool():
         """
         trues = data_chunk[0]
         preds = data_chunk[1]
-        labels = sorted(set(trues) | set(preds))
+        self.labels = sorted(set(self.labels) | set(trues) | set(preds))
 
-        #TODO Smelly
-        self.labels = sorted(set(labels) | set(self.labels))
-
-        matrix = confusion_matrix(trues, preds, labels=labels)
+        matrix = confusion_matrix(trues, preds, labels=self.labels)
         FP = matrix.sum(axis=0) - np.diag(matrix)
         FN = matrix.sum(axis=1) - np.diag(matrix)
         TP = np.diag(matrix)
 
         stats = defaultdict(dict)
 
-        for i, label in zip(range(len(labels)), labels):
+        for i, label in zip(range(len(self.labels)), self.labels):
             stats[label]['FP'] = FP[i]
             stats[label]['FN'] = FN[i]
             stats[label]['TP'] = TP[i]
@@ -80,8 +76,7 @@ class EvaluationTool():
         labels = sorted(set(trues) | set(preds))
         keys = list(metadata[agg_column])
 
-        #TODO Smelly
-        self.labels = sorted(set(labels) | set(self.labels))
+        self.labels = sorted(set(self.labels) | set(trues) | set(preds))
 
         for true, pred, key in zip(trues, preds, keys):
             if true == pred:
@@ -132,10 +127,7 @@ class EvaluationTool():
         :parama par_labels: Compute avg precision from these labels.
         :return: Average precision.
         """
-        if not par_labels:
-            labels = list(self.labels)
-        else:
-            labels = list(par_labels)
+        labels = list(par_labels) if par_labels else list(self.labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -157,13 +149,10 @@ class EvaluationTool():
         :param stats: Computed statistics (TPs, FPs, FNs for all labels)
         :param legit: If false, legit label is skipped.
         :param nan: If false, nan precisions are skipped.
-        :parama par_labels: Compute avg recall from these labels.
+        :param par_labels: Compute avg recall from these labels.
         :return: Average recall.
         """
-        if not par_labels:
-            labels = list(self.labels)
-        else:
-            labels = list(par_labels)
+        labels = list(par_labels) if par_labels else list(self.labels)
 
         if not legit:
             labels.remove(self.legit)
@@ -190,8 +179,7 @@ class EvaluationTool():
         counts['TP'] = 0
         counts['FP'] = 0
         counts['FN'] = 0
-        if not isinstance(labels, list):
-            labels = [labels]
+        labels = [labels] if not isinstance(labels, list) else labels
         for label in labels:
             counts['TP'] += stats[label]['TP']
             counts['FP'] += stats[label]['FP']

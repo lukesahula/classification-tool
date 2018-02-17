@@ -16,7 +16,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 
 
 class TestEvaluationTool(object):
-
     def test_compute_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_keys')
         eval_tool = EvaluationTool(legit=0)
@@ -216,7 +215,9 @@ class TestEvaluationTool(object):
                 stats[label]['FN'] += chunk_stats[label]['FN']
                 stats[label]['TP'] += chunk_stats[label]['TP']
 
-        prec = [eval_tool.compute_precision(x, stats) for x in eval_tool.labels]
+        prec = [
+            eval_tool.compute_precision(x, stats) for x in eval_tool.labels
+        ]
 
         assert np.isnan(prec[4])
 
@@ -293,7 +294,6 @@ class TestEvaluationTool(object):
         )
 
         assert np.allclose(rec, rec_avg_sklearn)
-
 
     def test_get_avg_prec_nans_false(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_unbalanced')
@@ -376,7 +376,6 @@ class TestEvaluationTool(object):
 
         rec = eval_tool.get_avg_recall(stats=stats, nan=True)
 
-
         # TODO: Think of a better assert
         assert np.allclose(rec, 0.242857)
 
@@ -419,9 +418,9 @@ class TestEvaluationTool(object):
 
         expected_stats = {
             1: {
-                'TP' : 3,
-                'FP' : 1,
-                'FN' : 1
+                'TP': 3,
+                'FP': 1,
+                'FN': 1
             },
             2: {
                 'TP': 1,
@@ -457,14 +456,14 @@ class TestEvaluationTool(object):
 
         expected_stats = {
             0: {
-                'TP' : 1,
-                'FP' : 1,
-                'FN' : 1
+                'TP': 1,
+                'FP': 1,
+                'FN': 1
             },
             1: {
-                'TP' : 7,
-                'FP' : 0,
-                'FN' : 2
+                'TP': 7,
+                'FP': 0,
+                'FN': 2
             },
             2: {
                 'TP': 1,
