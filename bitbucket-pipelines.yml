@@ -11,3 +11,4 @@ pipelines:
           - pytest evaluation_tool --cov=evaluation_tool
           - pytest loading_tool --cov=loading_tool
           - pytest utils --cov=utils
+          - pytest classifiers --cov=classifiers
