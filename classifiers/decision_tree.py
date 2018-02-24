@@ -38,27 +38,37 @@ class DecisionTree():
         self.root = self.__build_tree(feature_matrix, labels)
 
     def predict(self, observations):
-        predictions = []
-        for index, row in observations.iterrows():
-            predictions.append(self.root.evaluate(row))
-        return predictions
+        return [self.root.evaluate(row) for row in observations.itertuples(False)]
+
+    def predict_otfi(self, observations):
+        pass
 
     def __build_tree(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):
             return self.__create_leaf_node(labels)
         sampled_columns = self.__get_feature_sample(feature_matrix)
+        if sampled_columns is None:
+            return self.__create_leaf_node(labels)
         attr, value = self.__find_best_split_parameters(
             sampled_columns, labels
         )
-        dataset_left, dataset_right = self.__split_dataset(
+        threshold = self.__get_split_threshold(
             feature_matrix, labels, attr, value
         )
-        if len(dataset_left[1]) == 0 or len(dataset_right[1]) == 0:
+        labels_left = labels.loc[threshold]
+        labels_right = labels.loc[~threshold]
+        if len(labels_left) == 0 or len(labels_right) == 0:
             return self.__create_leaf_node(
-                pd.concat((dataset_left[1], dataset_right[1]))
+                pd.concat((labels_left, labels_right))
             )
-        left_child = self.__build_tree(dataset_left[0], dataset_left[1])
-        right_child = self.__build_tree(dataset_right[0], dataset_right[1])
+        left_child = self.__build_tree(
+            feature_matrix.loc[threshold, :],
+            labels_left
+        )
+        right_child = self.__build_tree(
+            feature_matrix.loc[~threshold, :],
+            labels_right
+        )
         return DecisionNode(left_child, right_child, attr, value)
 
     def __should_create_leaf_node(self, feature_matrix, labels):
@@ -73,13 +83,20 @@ class DecisionTree():
     def __create_leaf_node(self, labels):
         return LeafNode(mode(labels)[0][0])
 
-    def __get_feature_sample(self, fm):
-        feature_matrix = fm.loc[:, (fm != fm.iloc[0]).any()]  # Drop const cols
+    def __get_feature_sample(self, feature_matrix):
+        # Drop constant columns
+        feature_matrix = feature_matrix.loc[
+            :, (feature_matrix != feature_matrix.iloc[0]).any()
+        ]
+        if len(feature_matrix.columns) <= 1:
+            return None
         if self.max_features == 'sqrt':
-            cols = feature_matrix.sample(
-                n=ceil(sqrt(len(feature_matrix.columns))), axis=1,
-                random_state=self.random_state)
-            return cols
+            cols = self.random_state.choice(
+                a=feature_matrix.columns,
+                size=ceil(sqrt(len(feature_matrix.columns))),
+                replace=False
+            )
+            return feature_matrix.loc[:, cols]
         else:
             return feature_matrix
 
@@ -108,10 +125,9 @@ class DecisionTree():
                     split = column, value
         return split
 
-    def __split_dataset(self, feature_matrix, labels, attr, value):
-        threshold = feature_matrix[attr].values <= value
-        return ((feature_matrix[threshold], labels[threshold]),
-                (feature_matrix[~threshold], labels[~threshold]))
+    def __get_split_threshold(self, feature_matrix, labels, attr, value):
+        threshold = feature_matrix.loc[:, attr].values <= value
+        return threshold
 
     def __compute_entropy(self, counts_l, counts_r):
         size_l = sum(counts_l['count'])

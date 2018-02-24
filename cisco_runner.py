@@ -6,10 +6,11 @@ from utils.utils import tee
 from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
-from classifiers.decision_tree import DecisionTree
+from classifiers.random_forest import RandomForest as RF
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
 from collections import defaultdict
+from joblib import Parallel
 import numpy as np
 
 
@@ -160,8 +161,8 @@ class CiscoRunner():
         # Configutarion for data preprocessing
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 20000,
-            'bin_samples': 10000,
+            'neg_samples': 4000,
+            'bin_samples': 1000,
             'seed': random_state,
             'nan_value': nan_value
         }
@@ -179,22 +180,25 @@ class CiscoRunner():
                     random_state=random_state
                 )
             else:
-                clsfr = DecisionTree(
-                    max_features='sqrt',
-                    min_samples_split=2,
-                    random_state=0
+                clsfr = RF(
+                    max_features=max_features,
+                    min_samples_split=min_samples_split,
+                    random_state=random_state,
+                    n_jobs=n_jobs,
+                    n_estimators=n_estimators
                 )
 
             loading_tool = LoadingTool(sampling_settings)
             clas_tool = ClassificationTool(clsfr)
             tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
+
             clas_tool.train_classifier(tr_data)
             tr_data = None
-        elif os.path.isfile(ser_classifier):
-            clsfr = joblib.load(ser_classifier)
-            loading_tool = LoadingTool(sampling_settings, clsfr.bins)
-            clas_tool = ClassificationTool(clsfr.classifier)
+        elif os.path.isfile(par_classifier):
+            par_classifier = joblib.load(par_classifier)
+            loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
+            clas_tool = ClassificationTool(par_classifier.classifier)
         else:
             loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
             clas_tool = ClassificationTool(par_classifier.classifier)
@@ -202,12 +206,22 @@ class CiscoRunner():
         if nan_ratio:
             nan_ratios = self.__compute_nan_ratios(t_path, loading_tool)
 
-        for t_data in loading_tool.load_testing_data(t_path):
-            t_data = loading_tool.quantize_data(t_data)
-            clas_tool.save_predictions(
-                t_data,
-                predictions_output,
-            )
+        ser_classifier = SerializableClassifier(
+            clas_tool.classifier,
+            loading_tool.bins
+        )
+
+        if dump:
+            joblib.dump(ser_classifier, clsfr_output, compress=9)
+
+        with Parallel(n_jobs=n_jobs) as parallel:
+            for t_data in loading_tool.load_testing_data(t_path):
+                t_data = loading_tool.quantize_data(t_data)
+                clas_tool.save_predictions(
+                    t_data,
+                    predictions_output,
+                    parallel
+                )
         t_data = None
 
         eval_tool = EvaluationTool(legit=0)
@@ -237,15 +251,22 @@ class CiscoRunner():
 
         self.__write_stats(eval_output, eval_tool, stats)
 
-        if dump:
-            ser_classifier = SerializableClassifier(
-                clas_tool.classifier,
-                loading_tool.bins
-            )
+        return ser_classifier
 
-            joblib.dump(ser_classifier, clsfr_output, compress=9)
-        else:
-            return clsfr
+    def get_corellation_matrix(self, path, output_dir):
+        eval_tool = EvaluationTool()
+        loading_tool = LoadingTool()
+        data = loading_tool.load_training_data(path)
+        corr_matrix, norm = loading_tool.compute_corellation_matrix(data)
+        corr_path = os.path.join(output_dir, 'corr')
+        with open(corr_path, 'a', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f, delimiter=';')
+            writer.writerows(corr_matrix)
+
+        norm_path = os.path.join(output_dir, 'norm')
+        with open(norm_path, 'a', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f, delimiter=';')
+            writer.writerows(norm)
 
 
 runner = CiscoRunner()
@@ -255,19 +276,18 @@ out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 
-runner.execute_run(
-    classifier=RFC, output_dir=out_dir_unagg, nan_value='const', dump=False
-)
+clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
-# clsfr = runner.execute_run(
-#    clsfr=None, agg_by=None, relaxed=False,
-#    dump=False, output_dir=output_dir, nan_value='mean'
-# )
-# runner.execute_run(
-#    clsfr=clsfr, agg_by='user', relaxed=False,
-#    dump=False, output_dir=output_dir, nan_value='mean'
-# )
-# runner.execute_run(
-#    clsfr=clsfr, agg_by='user', relaxed=True,
-#    dump=True, output_dir=output_dir, nan_value='mean'
-# )
+clsfr = runner.execute_run(
+    classifier=RF, agg_by=None, relaxed=False,
+    dump=True, output_dir=out_dir_unagg, nan_value='const',
+    n_estimators=100
+)
+#runner.execute_run(
+#    par_classifier=clsfr, agg_by='user', relaxed=False,
+#    dump=False, output_dir=out_dir_agg_by_u, nan_value='const'
+#)
+#runner.execute_run(
+#    par_classifier=clsfr, agg_by='user', relaxed=True,
+#    dump=True, output_dir=out_dir_agg_by_u_r, nan_value='const'
+#)

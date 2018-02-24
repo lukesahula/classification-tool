@@ -99,9 +99,9 @@ class TestLoadingTool(object):
             pd.Series(expected_labels),
             pd.DataFrame(expected_metadata)
         )
-        assert (expected[0].equals(result[0])
-                and expected[1].equals(result[1])
-                and expected[2].equals(result[2]))
+        assert np.allclose(expected[0], result[0])
+        assert np.allclose(expected[1], result[1])
+        assert np.allclose(expected[2], result[2])
 
     def test_load_training_data_const_nan_value(self):
         path = DATA_DIR
@@ -141,9 +141,9 @@ class TestLoadingTool(object):
             pd.Series(expected_labels),
             pd.DataFrame(expected_metadata)
         )
-        assert (expected[0].equals(result[0])
-                and expected[1].equals(result[1])
-                and expected[2].equals(result[2]))
+        assert np.allclose(expected[0], result[0])
+        assert np.allclose(expected[1], result[1])
+        assert np.allclose(expected[2], result[2])
 
     def test_load_training_data_mean_nan_value(self):
         path = DATA_DIR
@@ -183,9 +183,9 @@ class TestLoadingTool(object):
             pd.Series(expected_labels),
             pd.DataFrame(expected_metadata)
         )
-        assert (expected[0].equals(result[0])
-                and expected[1].equals(result[1])
-                and expected[2].equals(result[2]))
+        assert np.allclose(expected[0], result[0])
+        assert np.allclose(expected[1], result[1])
+        assert np.allclose(expected[2], result[2])
 
     def test_load_training_data_median_nan_value(self):
         path = DATA_DIR
@@ -225,9 +225,9 @@ class TestLoadingTool(object):
             pd.Series(expected_labels),
             pd.DataFrame(expected_metadata)
         )
-        assert (expected[0].equals(result[0])
-                and expected[1].equals(result[1])
-                and expected[2].equals(result[2]))
+        assert np.allclose(expected[0], result[0])
+        assert np.allclose(expected[1], result[1])
+        assert np.allclose(expected[2], result[2])
 
     def test_quantize_data_binned(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
@@ -252,7 +252,7 @@ class TestLoadingTool(object):
             [15.625, 15.625, 15.625, 10],
             [20.0, 20.0, 20.0, 10]
         ])
-        assert expected.equals(dataset[0])
+        assert np.allclose(expected, dataset[0])
 
     def test_quantize_data_unbinned(self):
         path = os.path.join(DATA_DIR, 'test_quantization')
@@ -272,7 +272,7 @@ class TestLoadingTool(object):
             [15.625, 15.625, 15.625, 10],
             [20.0, 20.0, 20.0, 10]
         ])
-        assert expected.equals(dataset[0])
+        assert np.allclose(expected, dataset[0])
 
     def test_load_classifications(self):
         path = os.path.join(DATA_DIR, 'test_classifications')
@@ -288,7 +288,7 @@ class TestLoadingTool(object):
             [10, 10, 5, 4, 4, 4, 10, 8, 10, 9],
             [10, 9, 5, 4, 9, 8, 8, 8, 10, 9],
         )
-        assert result == expected
+        assert np.allclose(result, expected)
 
     def test_load_classifications_keys(self):
         path = os.path.join(DATA_DIR, 'test_classifications_keys')
@@ -306,4 +306,4 @@ class TestLoadingTool(object):
             ]).transpose(),
             columns=['timestamp', 'host', 'user']
         )
-        assert metadata.equals(expected)
+        assert np.allclose(metadata, expected)

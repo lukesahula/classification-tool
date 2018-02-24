@@ -1,6 +1,7 @@
+joblib
 numpy
-scipy
-sklearn
 pandas
 pytest
 pytest-cov
+scipy
+sklearn

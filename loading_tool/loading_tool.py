@@ -77,10 +77,11 @@ class LoadingTool():
         files = glob.glob(os.path.join(path, 'pos', '*.gz'))
         data = pd.concat(
             [data, pd.concat(
-                pd.read_csv(f, sep='\t', header=None) for f in files
+                pd.read_csv(
+                    f, sep='\t', header=None, dtype=np.float32
+                ) for f in files
             )]
         )
-
         metadata = data[data.columns[:3]]
         labels = data[data.columns[3]]
         data = data[data.columns[4:]]
@@ -105,8 +106,7 @@ class LoadingTool():
         files = glob.glob(os.path.join(path, 'neg', '*.gz'))
         files += glob.glob(os.path.join(path, 'pos', '*.gz'))
         for f in files:
-            data = pd.read_csv(f, sep='\t', header=None)
-
+            data = pd.read_csv(f, sep='\t', header=None, dtype=np.float32)
             metadata = data[data.columns[:3]]
             labels = data[data.columns[3]]
             data = data[data.columns[4:]]
@@ -128,7 +128,9 @@ class LoadingTool():
         data = pd.DataFrame()
         samples_per_part = self.neg_samples // len(files)
         for file in files:
-            unsampled = pd.read_csv(file, sep='\t', header=None)
+            unsampled = pd.read_csv(
+                file, sep='\t', header=None, dtype=np.float32
+            )
             sampled_indices = self.__sample_indices(
                 list(unsampled.index.values),
                 samples_per_part
@@ -193,7 +195,7 @@ class LoadingTool():
                 else self.bins[column][i-1] for i in digitized_list
             ]
 
-        return quantized_frame, dataset[1], dataset[2]
+        return quantized_frame.astype(np.float32), dataset[1], dataset[2]
 
     def load_classifications(self, file_path, delimiter, read_metadata=False):
         """
@@ -213,7 +215,8 @@ class LoadingTool():
             delimiter,
             header=None,
             names=columns,
-            chunksize=500000
+            chunksize=500000,
+            dtype=np.float32
         )
 
         for record in reader:

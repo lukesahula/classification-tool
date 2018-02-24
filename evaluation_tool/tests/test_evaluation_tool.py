@@ -137,7 +137,7 @@ class TestEvaluationTool(object):
                 stats[label]['FN'] += chunk_stats[label]['FN']
                 stats[label]['TP'] += chunk_stats[label]['TP']
 
-        labels = ['a', 'b', 'c']
+        labels = [0, 1, 2]
         prec = eval_tool.get_avg_precision(stats=stats, par_labels=labels)
         prec_avg_sklearn = precision_score(
             y_true=trues,
@@ -189,7 +189,7 @@ class TestEvaluationTool(object):
                 stats[label]['FN'] += chunk_stats[label]['FN']
                 stats[label]['TP'] += chunk_stats[label]['TP']
 
-        labels = ['a', 'b', 'c']
+        labels = [0, 1, 2]
         rec = eval_tool.get_avg_recall(stats=stats, par_labels=labels)
         rec_avg_sklearn = recall_score(
             y_true=trues,
@@ -394,8 +394,7 @@ class TestEvaluationTool(object):
             ]).transpose(),
             columns=['timestamp', 'host', 'user']
         )
-
-        assert metadata.equals(expected)
+        assert np.allclose(expected, metadata)
 
     def test_compute_aggregated_stats(self):
         file_path = os.path.join(ROOT_DIR, 'datasets/tests/example_agg')
@@ -557,3 +556,16 @@ class TestEvaluationTool(object):
         )
         expected = [0, 1]
         assert expected == precs_above_threshold
+
+    def test_get_correlation_matrix(self):
+        data = pd.DataFrame(
+            [
+                [1, 2, 3, 4],
+                [1, 2, 4, 4],
+                [1, 2, 4, 3],
+                [2, 4, 6, 8]
+            ]
+        )
+        eval_tool = EvaluationTool()
+        corr_matrix = eval_tool.compute_corellation_matrix(data)
+        assert type(corr_matrix) == pd.DataFrame
