@@ -21,7 +21,7 @@ class DecisionNode():
         self.value = value
 
     def evaluate(self, observation):
-        if observation[self.attr] < self.value:
+        if observation[self.attr] <= self.value:
             return self.left_child.evaluate(observation)
         else:
             return self.right_child.evaluate(observation)
@@ -32,11 +32,10 @@ class DecisionTree():
         self.root = None
         self.max_features = max_features
         self.min_samples_split = min_samples_split
-        self.random_state = random_state
-        self.feature_sample_set = False
+        self.random_state = np.random.RandomState(random_state)
 
-    def fit(self, feature_vectors, labels):
-        self.root = self.__build_tree(feature_vectors, labels)
+    def fit(self, feature_matrix, labels):
+        self.root = self.__build_tree(feature_matrix, labels)
 
     def predict(self, observations):
         predictions = []
@@ -44,16 +43,15 @@ class DecisionTree():
             predictions.append(self.root.evaluate(row))
         return predictions
 
-    def __build_tree(self, feature_vectors, labels):
-        if self.__should_create_leaf_node(feature_vectors, labels):
+    def __build_tree(self, feature_matrix, labels):
+        if self.__should_create_leaf_node(feature_matrix, labels):
             return self.__create_leaf_node(labels)
-        if not self.feature_sample_set:
-            feature_vectors = self.__get_feature_sample(feature_vectors)
+        sampled_columns = self.__get_feature_sample(feature_matrix)
         attr, value = self.__find_best_split_parameters(
-            feature_vectors, labels
+            sampled_columns, labels
         )
         dataset_left, dataset_right = self.__split_dataset(
-            feature_vectors, labels, attr, value
+            feature_matrix, labels, attr, value
         )
         if len(dataset_left[1]) == 0 or len(dataset_right[1]) == 0:
             return self.__create_leaf_node(
@@ -63,10 +61,10 @@ class DecisionTree():
         right_child = self.__build_tree(dataset_right[0], dataset_right[1])
         return DecisionNode(left_child, right_child, attr, value)
 
-    def __should_create_leaf_node(self, feature_vectors, labels):
+    def __should_create_leaf_node(self, feature_matrix, labels):
         if len(set(labels)) == 1:
             return True
-        if len(feature_vectors.drop_duplicates()) == 1:
+        if len(feature_matrix.drop_duplicates()) == 1:
             return True
         if len(labels) < self.min_samples_split:
             return True
@@ -75,25 +73,25 @@ class DecisionTree():
     def __create_leaf_node(self, labels):
         return LeafNode(mode(labels)[0][0])
 
-    def __get_feature_sample(self, feature_vectors):
-        self.feature_sample_set = True
+    def __get_feature_sample(self, fm):
+        feature_matrix = fm.loc[:, (fm != fm.iloc[0]).any()]  # Drop const cols
         if self.max_features == 'sqrt':
-            return feature_vectors.sample(
-                n=ceil(sqrt(len(feature_vectors.columns))),
-                random_state=self.random_state, axis=1
-            )
+            cols = feature_matrix.sample(
+                n=ceil(sqrt(len(feature_matrix.columns))), axis=1,
+                random_state=self.random_state)
+            return cols
         else:
-            return feature_vectors
+            return feature_matrix
 
-    def __find_best_split_parameters(self, feature_vectors, labels):
-        max_gain = float('-inf')
+    def __find_best_split_parameters(self, feature_matrix, labels):
+        min_entropy = float('inf')
         split = None
-        for column in feature_vectors:
+        for column in feature_matrix.columns:
             counts_l, counts_r = self.__compute_class_counts(labels)
             coordinates = self.__compute_coordinates(
-                feature_vectors[column], labels
+                feature_matrix[column], labels
             )
-            for value, counts in coordinates.items():
+            for value, counts in sorted(coordinates.items()):
                 for label, count in counts.items():
                     index = np.where(counts_l['class'] == label)
                     counts_l[index] = (
@@ -104,29 +102,25 @@ class DecisionTree():
                         counts_r[index]['class'],
                         counts_r[index]['count'] - count
                     )
-                current_gain = self.__compute_gain(counts_l, counts_r)
-                if current_gain >= max_gain:
-                    max_gain = current_gain
+                current_entropy = self.__compute_entropy(counts_l, counts_r)
+                if current_entropy < min_entropy:
+                    min_entropy = current_entropy
                     split = column, value
-        print('Split: ' + str(split[0]) + ' ' + str(split[1]))
         return split
 
-    def __split_dataset(self, feature_vectors, labels, attr, value):
-        threshold = feature_vectors[attr] < value
-        return ((feature_vectors[threshold], labels[threshold]),
-                (feature_vectors[~threshold], labels[~threshold]))
+    def __split_dataset(self, feature_matrix, labels, attr, value):
+        threshold = feature_matrix[attr].values <= value
+        return ((feature_matrix[threshold], labels[threshold]),
+                (feature_matrix[~threshold], labels[~threshold]))
 
-    def __compute_gain(self, counts_l, counts_r):
+    def __compute_entropy(self, counts_l, counts_r):
         size_l = sum(counts_l['count'])
         size_r = sum(counts_r['count'])
-        if size_r == 0 or size_l == 0:
-            return float('-inf')
-        entropy_l = size_l * entropy(counts_l['count'])
-        entropy_r = size_r * entropy(counts_r['count'])
+        entropy_l = size_l * entropy(counts_l['count']) if size_l != 0 else 0
+        entropy_r = size_r * entropy(counts_r['count']) if size_r != 0 else 0
         sum_sizes = size_l + size_r
 
-        gain = - ((entropy_l + entropy_r) / sum_sizes)
-        return gain
+        return ((entropy_l + entropy_r) / sum_sizes)
 
     def __compute_class_counts(self, labels):
         names = ['class', 'count']
@@ -140,14 +134,14 @@ class DecisionTree():
 
         return counts_l, counts_r
 
-    def __compute_coordinates(self, feature_vector, labels):
+    def __compute_coordinates(self, column, labels):
         classes = set(labels)
         coordinates = defaultdict(dict)
-        for v in feature_vector:
+        for v in column:
             for c in classes:
                 coordinates[v][c] = 0
 
-        for v, l in zip(feature_vector, labels):
+        for v, l in zip(column, labels):
             coordinates[v][l] += 1
 
         return coordinates
