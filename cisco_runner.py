@@ -73,7 +73,7 @@ class CiscoRunner():
             fps = [stats[l]['FP'] for l in labels]
             median_fps = np.median(fps)
             sum_fps = stats_counts['FP']
-            tee('Number of classes with precision >= %.00f: %.0f, '
+            tee('Number of classes with precision >= %1.2f: %.0f, '
                 'Avg. recall: %3.3f, Median TPs: %.0f, Sum TPs: %.0f, '
                 'Median FPs: %.0f, Sum FPs: %.0f'
                 % (threshold, len(labels), avg_recall, median_tps,
@@ -160,8 +160,8 @@ class CiscoRunner():
         # Configutarion for data preprocessing
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 100000,
-            'bin_samples': 50000,
+            'neg_samples': 20000,
+            'bin_samples': 10000,
             'seed': random_state,
             'nan_value': nan_value
         }
@@ -256,7 +256,7 @@ out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 
 runner.execute_run(
-    classifier='dt', output_dir=out_dir_unagg, nan_value='const'
+    classifier=RFC, output_dir=out_dir_unagg, nan_value='const', dump=False
 )
 
 # clsfr = runner.execute_run(

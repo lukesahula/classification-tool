@@ -20,7 +20,7 @@ class TestLoadingTool(object):
         loading_tool = LoadingTool(sampling_settings)
         nan_counts_total = defaultdict(int)
         class_counts_total = defaultdict(int)
-        for t_data in loading_tool.load_testing_data(path):
+        for t_data in loading_tool.load_testing_data(path, True):
             nan_counts, class_counts = t_data[3]
             for k in nan_counts.keys():
                 nan_counts_total[k] += nan_counts[k]

@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 import glob
-import random
 from collections import defaultdict
 
 
@@ -13,7 +12,7 @@ class LoadingTool():
             self.bin_count = sampling_settings['bin_count']
             self.bin_samples = sampling_settings['bin_samples']
             self.neg_samples = sampling_settings['neg_samples']
-            self.seed = sampling_settings['seed']
+            self.seed = np.random.RandomState(sampling_settings['seed'])
             self.nan_value = sampling_settings['nan_value']
 
         self.means = None
@@ -94,7 +93,7 @@ class LoadingTool():
 
         return data, labels, metadata
 
-    def load_testing_data(self, path):
+    def load_testing_data(self, path, compute_nans=False):
         """
         Reads cisco specific gzipped files at given path without sampling
         the negatives, yielding the data one file at a time.
@@ -113,10 +112,12 @@ class LoadingTool():
             data = data[data.columns[4:]]
             data.rename(columns=lambda x: x-4, inplace=True)
 
-            nan_ratios = self.__compute_nan_counts_per_class((data, labels))
+            counts = None
+            if compute_nans:
+                counts = self.__compute_nan_counts_per_class((data, labels))
             data = self.__replace_nans(data, self.nan_value)
 
-            yield data, labels, metadata, nan_ratios
+            yield data, labels, metadata, counts
 
     def __sample_negatives(self, files):
         """
@@ -142,8 +143,7 @@ class LoadingTool():
         :param indices: A list of indices.
         :return: A list of sampled indices.
         """
-        random.seed(self.seed)
-        return random.sample(indices, samples_count)
+        return self.seed.choice(a=indices, size=samples_count, replace=False)
 
     def __compute_bins(self, dataset):
         """
