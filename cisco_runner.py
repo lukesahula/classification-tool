@@ -135,7 +135,7 @@ class CiscoRunner():
         t_path='classification_tool/datasets/cisco_datasets/data/test_t',
         classifier=RFC, n_estimators=100, max_features='sqrt',
         min_samples_split=2, criterion='entropy', n_jobs=-1,
-        random_state=0, nan_value=None, relaxed=False, agg_by=None
+        random_state=0, nan_value=None, relaxed=False, agg_by=None, method=None
     ):
 
         clsfr_output = os.path.join(output_dir, 'clsfr')
@@ -193,7 +193,10 @@ class CiscoRunner():
             tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
 
-            clas_tool.train_classifier(tr_data)
+            if method == 'otfi':
+                tr_data = (tr_data[0].replace(to_replace=-1000000, value=np.nan), tr_data[1], tr_data[2])
+
+            clas_tool.train_classifier(tr_data, method)
             tr_data = None
         elif os.path.isfile(par_classifier):
             par_classifier = joblib.load(par_classifier)
@@ -220,7 +223,8 @@ class CiscoRunner():
                 clas_tool.save_predictions(
                     t_data,
                     predictions_output,
-                    parallel
+                    parallel,
+                    method
                 )
         t_data = None
 
@@ -278,11 +282,17 @@ out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
-clsfr = runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False,
-    dump=True, output_dir=out_dir_unagg, nan_value='const',
-    n_estimators=100
+## OTFI
+runner.execute_run(
+    classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg, nan_value='const', n_estimators=100,
+    method='otfi'
 )
+
+#clsfr = runner.execute_run(
+#    classifier=RF, agg_by=None, relaxed=False,
+#    dump=True, output_dir=out_dir_unagg, nan_value='const',
+#    n_estimators=100
+#)
 #runner.execute_run(
 #    par_classifier=clsfr, agg_by='user', relaxed=False,
 #    dump=False, output_dir=out_dir_agg_by_u, nan_value='const'

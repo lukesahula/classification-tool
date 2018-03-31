@@ -5,25 +5,30 @@ class ClassificationTool():
     def __init__(self, classifier):
         self.classifier = classifier
 
-    def train_classifier(self, tr_data):
+    def train_classifier(self, tr_data, method=None):
         """
         Trains the classifier.
         :param tr_data: Training data in a tuple (features, labels)
         Features are a pd.DataFrame, labels a list
         """
-        self.classifier.fit(tr_data[0], tr_data[1])
+        if method == 'otfi':
+            self.classifier.fit_otfi(tr_data[0], tr_data[1])
+        else:
+            self.classifier.fit(tr_data[0], tr_data[1])
 
-    def save_predictions(
-        self, t_data, output_file, parallel=None, metadata=True, legit=0
-    ):
+    def save_predictions(self, t_data, output_file, parallel=None, metadata=True, legit=0, method=None):
         """
         Predicts labels on testing data and writes it to csv file.
         :param t_data: Testing data in a tuple (features, labels, metadata)
         Features are a pd.DataFrame, labels a list, metadata a pd.DataFrame
         :param output_file: Path to output file.
         """
-        preds = (self.classifier.predict(t_data[0], parallel) if parallel
-                 else list(self.classifier.predict(t_data[0])))
+        if method == 'otfi':
+            preds = (self.classifier.predict_otfi(t_data[0], parallel) if parallel
+                     else list(self.classifier.predict_otfi(t_data[0])))
+        else:
+            preds = (self.classifier.predict(t_data[0], parallel) if parallel
+                     else list(self.classifier.predict(t_data[0])))
 
         # Get indexes of True Negatives.
         if legit is not None:

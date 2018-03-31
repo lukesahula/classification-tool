@@ -6,6 +6,7 @@ from evaluation_tool.evaluation_tool import EvaluationTool
 import os
 import pandas as pd
 import math
+import numpy as np
 from collections import defaultdict
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import load_iris
@@ -92,3 +93,16 @@ class TestRandomForest():
         skprec = eval_tool.get_avg_precision(stats=skstats)
 
         assert math.isclose(prec, skprec, abs_tol=0.011)
+
+#    def test_otf_imputation(self):
+#        forest = RandomForest(
+#            max_features='sqrt', min_samples_split=2, random_state=19,
+#            n_estimators=10, n_jobs=-1
+#        )
+#        np.random.seed(123)
+#        data = np.random.randint(0, 10, (10, 5))
+#        feature_matrix = pd.DataFrame(data, columns=list('abcde'))
+#        observations = feature_matrix.where(feature_matrix > 2)
+#        forest.feature_matrix = feature_matrix
+#        with Parallel(n_jobs=-1) as p:
+#            predictions = forest.predict_otfi(observations, p)

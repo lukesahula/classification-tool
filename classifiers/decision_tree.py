@@ -40,9 +40,6 @@ class DecisionTree():
     def predict(self, observations):
         return [self.root.evaluate(row) for row in observations.itertuples(False)]
 
-    def predict_otfi(self, observations):
-        pass
-
     def __build_tree(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):
             return self.__create_leaf_node(labels)
@@ -155,9 +152,15 @@ class DecisionTree():
         coordinates = defaultdict(dict)
         for v in column:
             for c in classes:
-                coordinates[v][c] = 0
+                if not pd.isnull(v):
+                    coordinates[v][c] = 0
+                else:
+                    coordinates[-1000000][c] = 0
 
         for v, l in zip(column, labels):
-            coordinates[v][l] += 1
+            if not pd.isnull(v):
+                coordinates[v][l] += 1
+            else:
+                coordinates[-1000000][c] += 1
 
         return coordinates

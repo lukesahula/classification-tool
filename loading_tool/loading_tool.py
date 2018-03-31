@@ -91,7 +91,6 @@ class LoadingTool():
         data.reset_index(drop=True, inplace=True)
 
         data = self.__replace_nans(data, self.nan_value)
-
         return data, labels, metadata
 
     def load_testing_data(self, path, compute_nans=False):
@@ -115,6 +114,7 @@ class LoadingTool():
             counts = None
             if compute_nans:
                 counts = self.__compute_nan_counts_per_class((data, labels))
+
             data = self.__replace_nans(data, self.nan_value)
 
             yield data, labels, metadata, counts
