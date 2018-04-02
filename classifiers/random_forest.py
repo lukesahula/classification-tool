@@ -26,15 +26,6 @@ class RandomForest():
         tree.fit(self.feature_matrix.loc[indices], self.labels[indices])
         return tree
 
-    def fit_otfi(self, feature_matrix, labels):
-        self.feature_matrix = feature_matrix
-        self.labels = labels
-        random_seeds = self.random_state.randint(0, 10000, self.n_estimators)
-        self.trees = Parallel(n_jobs=self.n_jobs)(
-             delayed(self.init_tree)(seed)
-             for seed in random_seeds
-        )
-
     def fit(self, feature_matrix, labels):
         self.feature_matrix = feature_matrix
         self.labels = labels
@@ -57,13 +48,6 @@ class RandomForest():
             for tree in self.trees
         )
         return [self.mode(ind_pred) for ind_pred in zip(*ind_predictions)]
-
-    def predict_otfi(self, observations, parallel):
-        for column in observations.columns:
-            observations[column] = observations[column].apply(
-                lambda x: np.where(pd.isnull(x), self.feature_matrix[column].sample(replace=True), x)
-            )
-        self.predict(observations, parallel)
 
     def sample_dataset(self, seed):
         random_state = np.random.RandomState(seed)

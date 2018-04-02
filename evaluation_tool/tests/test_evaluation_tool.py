@@ -556,16 +556,3 @@ class TestEvaluationTool(object):
         )
         expected = [0, 1]
         assert expected == precs_above_threshold
-
-    def test_get_correlation_matrix(self):
-        data = pd.DataFrame(
-            [
-                [1, 2, 3, 4],
-                [1, 2, 4, 4],
-                [1, 2, 4, 3],
-                [2, 4, 6, 8]
-            ]
-        )
-        eval_tool = EvaluationTool()
-        corr_matrix = eval_tool.compute_corellation_matrix(data)
-        assert type(corr_matrix) == pd.DataFrame

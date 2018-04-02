@@ -197,7 +197,3 @@ class EvaluationTool():
         :return: A list of labels.
         """
         return [l for l in labels if self.compute_precision(l, stats) >= thres]
-
-    def compute_corellation_matrix(self, data):
-        corr_matrix = data.corr()
-        return corr_matrix

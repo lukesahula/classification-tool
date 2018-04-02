@@ -12,6 +12,7 @@ from sklearn.externals import joblib
 from collections import defaultdict
 from joblib import Parallel
 import numpy as np
+import pandas as pd
 
 
 class SerializableClassifier():
@@ -198,11 +199,11 @@ class CiscoRunner():
 
             clas_tool.train_classifier(tr_data, method)
             tr_data = None
-        elif os.path.isfile(par_classifier):
-            par_classifier = joblib.load(par_classifier)
+        elif type(par_classifier) == SerializableClassifier:
             loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
             clas_tool = ClassificationTool(par_classifier.classifier)
         else:
+            par_classifier = joblib.load(par_classifier)
             loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
             clas_tool = ClassificationTool(par_classifier.classifier)
 
@@ -258,41 +259,75 @@ class CiscoRunner():
         return ser_classifier
 
     def get_corellation_matrix(self, path, output_dir):
+        os.makedirs(output_dir)
         eval_tool = EvaluationTool()
-        loading_tool = LoadingTool()
-        data = loading_tool.load_training_data(path)
-        corr_matrix, norm = loading_tool.compute_corellation_matrix(data)
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 10000,
+            'bin_samples': 1000,
+            'seed': 0,
+            'nan_value': None,
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        data = loading_tool.load_training_data(path)[0]
+        corr_matrix = data.corr()
         corr_path = os.path.join(output_dir, 'corr')
-        with open(corr_path, 'a', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f, delimiter=';')
-            writer.writerows(corr_matrix)
-
+        corr_matrix.to_csv(corr_path, na_rep='NaN', sep='\t', encoding='utf-8')
+        norm = np.linalg.norm(corr_matrix)
         norm_path = os.path.join(output_dir, 'norm')
-        with open(norm_path, 'a', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f, delimiter=';')
-            writer.writerows(norm)
+        with open(norm_path, 'w') as f:
+            f.write(str(norm))
+
+    def get_missingness_correlation_matrix(self, path, output_dir):
+        os.makedirs(output_dir)
+        eval_tool = EvaluationTool()
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 10000,
+            'bin_samples': 1000,
+            'seed': 0,
+            'nan_value': None,
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        data = loading_tool.load_training_data(path)[0]
+        data[~pd.isnull(data)] = 1
+        data[pd.isnull(data)] = 0
+        corr_matrix = data.corr()
+        corr_path = os.path.join(output_dir, 'corr_missingness')
+        corr_matrix.to_csv(corr_path, na_rep='NaN', sep='\t', encoding='utf-8')
+        norm = np.linalg.norm(corr_matrix)
+        norm_path = os.path.join(output_dir, 'norm_missingness')
+        with open(norm_path, 'w') as f:
+            f.write(str(norm))
 
 
 runner = CiscoRunner()
 
 out_dir = datetime.datetime.now().isoformat()
+out_corr = os.path.join('corr_outputs', out_dir)
 out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
-## OTFI
-runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg, nan_value='const', n_estimators=100,
-    method='otfi'
-)
 
-#clsfr = runner.execute_run(
-#    classifier=RF, agg_by=None, relaxed=False,
-#    dump=True, output_dir=out_dir_unagg, nan_value='const',
-#    n_estimators=100
+## CORR
+#runner.get_correlation_matrix('classification_tool/datasets/cisco_datasets/data/test_tr', out_corr)
+## CORR MISINGNESS
+#runner.get_missingness_correlation_matrix('classification_tool/datasets/cisco_datasets/data/test_tr', out_corr)
+
+## OTFI
+#runner.execute_run(
+#    classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg, nan_value='const', n_estimators=100,
+#    method='otfi'
 #)
+
+clsfr = runner.execute_run(
+    classifier=RF, agg_by=None, relaxed=False,
+    dump=True, output_dir=out_dir_unagg, nan_value='const',
+    n_estimators=100
+)
 #runner.execute_run(
 #    par_classifier=clsfr, agg_by='user', relaxed=False,
 #    dump=False, output_dir=out_dir_agg_by_u, nan_value='const'

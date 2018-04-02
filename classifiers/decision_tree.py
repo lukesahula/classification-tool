@@ -152,15 +152,9 @@ class DecisionTree():
         coordinates = defaultdict(dict)
         for v in column:
             for c in classes:
-                if not pd.isnull(v):
-                    coordinates[v][c] = 0
-                else:
-                    coordinates[-1000000][c] = 0
+                coordinates[v][c] = 0
 
         for v, l in zip(column, labels):
-            if not pd.isnull(v):
-                coordinates[v][l] += 1
-            else:
-                coordinates[-1000000][c] += 1
+            coordinates[v][l] += 1
 
         return coordinates
