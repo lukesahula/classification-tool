@@ -14,13 +14,17 @@ class LeafNode():
 
 
 class DecisionNode():
-    def __init__(self, left_child, right_child, attr, value):
+    def __init__(self, left_child, right_child, attr, value, known_vals=None):
         self.left_child = left_child
         self.right_child = right_child
         self.attr = attr
         self.value = value
+        self.known_vals = known_vals
 
     def evaluate(self, observation):
+        if pd.isnull(observation[self.attr]):
+            observation[self.attr] = self.known_vals.sample()
+
         if observation[self.attr] <= self.value:
             return self.left_child.evaluate(observation)
         else:
@@ -28,44 +32,64 @@ class DecisionNode():
 
 
 class DecisionTree():
-    def __init__(self, max_features, min_samples_split, random_state):
+    def __init__(self, max_features, min_samples_split, random_state, method=None):
         self.root = None
         self.max_features = max_features
         self.min_samples_split = min_samples_split
         self.random_state = np.random.RandomState(random_state)
+        self.method = method
 
     def fit(self, feature_matrix, labels):
-        self.root = self.__build_tree(feature_matrix, labels)
+        if self.method == 'otfi':
+            self.root = self.__build_tree_otfi(feature_matrix, labels)
+        else:
+            self.root = self.__build_tree(feature_matrix, labels)
 
     def predict(self, observations):
         return [self.root.evaluate(row) for row in observations.itertuples(False)]
 
-    def __build_tree(self, feature_matrix, labels):
+    def __build_tree_otfi(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):
             return self.__create_leaf_node(labels)
+
         sampled_columns = self.__get_feature_sample(feature_matrix)
         if sampled_columns is None:
             return self.__create_leaf_node(labels)
-        attr, value = self.__find_best_split_parameters(
-            sampled_columns, labels
-        )
-        threshold = self.__get_split_threshold(
-            feature_matrix, labels, attr, value
-        )
+
+        attr, value = self.__find_best_split_parameters(sampled_columns, labels)
+        if attr is None and value is None:
+            return self.__create_leaf_node(labels)
+        threshold, known_vals = self.__get_split_threshold_otfi(feature_matrix, labels, attr, value)
         labels_left = labels.loc[threshold]
         labels_right = labels.loc[~threshold]
+
         if len(labels_left) == 0 or len(labels_right) == 0:
-            return self.__create_leaf_node(
-                pd.concat((labels_left, labels_right))
-            )
-        left_child = self.__build_tree(
-            feature_matrix.loc[threshold, :],
-            labels_left
-        )
-        right_child = self.__build_tree(
-            feature_matrix.loc[~threshold, :],
-            labels_right
-        )
+            return self.__create_leaf_node(pd.concat((labels_left, labels_right)))
+
+        left_child = self.__build_tree_otfi(feature_matrix.loc[threshold, :], labels_left)
+        right_child = self.__build_tree_otfi(feature_matrix.loc[~threshold, :], labels_right)
+
+        return DecisionNode(left_child, right_child, attr, value, known_vals)
+
+    def __build_tree(self, feature_matrix, labels):
+        if self.__should_create_leaf_node(feature_matrix, labels):
+            return self.__create_leaf_node(labels)
+
+        sampled_columns = self.__get_feature_sample(feature_matrix)
+        if sampled_columns is None:
+            return self.__create_leaf_node(labels)
+
+        attr, value = self.__find_best_split_parameters(sampled_columns, labels)
+        threshold = self.__get_split_threshold(feature_matrix, labels, attr, value)
+        labels_left = labels.loc[threshold]
+        labels_right = labels.loc[~threshold]
+
+        if len(labels_left) == 0 or len(labels_right) == 0:
+            return self.__create_leaf_node(pd.concat((labels_left, labels_right)))
+
+        left_child = self.__build_tree(feature_matrix.loc[threshold, :], labels_left)
+        right_child = self.__build_tree(feature_matrix.loc[~threshold, :], labels_right)
+
         return DecisionNode(left_child, right_child, attr, value)
 
     def __should_create_leaf_node(self, feature_matrix, labels):
@@ -82,9 +106,7 @@ class DecisionTree():
 
     def __get_feature_sample(self, feature_matrix):
         # Drop constant columns
-        feature_matrix = feature_matrix.loc[
-            :, (feature_matrix != feature_matrix.iloc[0]).any()
-        ]
+        feature_matrix = feature_matrix.loc[:, (feature_matrix != feature_matrix.iloc[0]).any()]
         if len(feature_matrix.columns) <= 1:
             return None
         if self.max_features == 'sqrt':
@@ -99,28 +121,29 @@ class DecisionTree():
 
     def __find_best_split_parameters(self, feature_matrix, labels):
         min_entropy = float('inf')
-        split = None
+        split = None, None
         for column in feature_matrix.columns:
             counts_l, counts_r = self.__compute_class_counts(labels)
-            coordinates = self.__compute_coordinates(
-                feature_matrix[column], labels
-            )
+            coordinates = self.__compute_coordinates(feature_matrix[column], labels)
             for value, counts in sorted(coordinates.items()):
                 for label, count in counts.items():
                     index = np.where(counts_l['class'] == label)
-                    counts_l[index] = (
-                        counts_l[index]['class'],
-                        counts_l[index]['count'] + count
-                    )
-                    counts_r[index] = (
-                        counts_r[index]['class'],
-                        counts_r[index]['count'] - count
-                    )
+                    counts_l[index] = (counts_l[index]['class'], counts_l[index]['count'] + count)
+                    counts_r[index] = (counts_r[index]['class'], counts_r[index]['count'] - count)
+
                 current_entropy = self.__compute_entropy(counts_l, counts_r)
                 if current_entropy < min_entropy:
                     min_entropy = current_entropy
                     split = column, value
         return split
+
+    def __get_split_threshold_otfi(self, feature_matrix, labels, attr, value):
+        known_vals = feature_matrix[attr].dropna()
+        imputed = feature_matrix[attr].apply(
+            lambda x: np.where(pd.isnull(x), known_vals.sample(replace=True), x)
+        )
+        threshold = imputed.loc[:].values <= value
+        return threshold, known_vals
 
     def __get_split_threshold(self, feature_matrix, labels, attr, value):
         threshold = feature_matrix.loc[:, attr].values <= value
@@ -139,9 +162,7 @@ class DecisionTree():
         names = ['class', 'count']
         formats = ['i8', 'i8']
         dtype = dict(names=names, formats=formats)
-        counts_r = np.fromiter(
-            Counter(labels).items(), dtype, count=len(set(labels))
-        )
+        counts_r = np.fromiter(Counter(labels).items(), dtype, count=len(set(labels)))
         counts_l = counts_r.copy()
         counts_l['count'] = 0
 
@@ -150,6 +171,10 @@ class DecisionTree():
     def __compute_coordinates(self, column, labels):
         classes = set(labels)
         coordinates = defaultdict(dict)
+
+        if self.method == 'otfi':
+            column = column.dropna()
+
         for v in column:
             for c in classes:
                 coordinates[v][c] = 0

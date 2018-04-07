@@ -186,7 +186,8 @@ class CiscoRunner():
                     min_samples_split=min_samples_split,
                     random_state=random_state,
                     n_jobs=n_jobs,
-                    n_estimators=n_estimators
+                    n_estimators=n_estimators,
+                    method=method
                 )
 
             loading_tool = LoadingTool(sampling_settings)
@@ -195,9 +196,11 @@ class CiscoRunner():
             tr_data = loading_tool.quantize_data(tr_data)
 
             if method == 'otfi':
-                tr_data = (tr_data[0].replace(to_replace=-1000000, value=np.nan), tr_data[1], tr_data[2])
+                tr_data = (
+                    tr_data[0].replace(to_replace=-1000000, value=np.nan), tr_data[1], tr_data[2]
+                )
 
-            clas_tool.train_classifier(tr_data, method)
+            clas_tool.train_classifier(tr_data)
             tr_data = None
         elif type(par_classifier) == SerializableClassifier:
             loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
@@ -312,27 +315,31 @@ out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 
-## CORR
-#runner.get_correlation_matrix('classification_tool/datasets/cisco_datasets/data/test_tr', out_corr)
-## CORR MISINGNESS
-#runner.get_missingness_correlation_matrix('classification_tool/datasets/cisco_datasets/data/test_tr', out_corr)
+# CORR
+# runner.get_correlation_matrix(
+#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+# )
+# CORR MISINGNESS
+# runner.get_missingness_correlation_matrix(
+#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+# )
 
-## OTFI
-#runner.execute_run(
-#    classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg, nan_value='const', n_estimators=100,
-#    method='otfi'
-#)
-
-clsfr = runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False,
-    dump=True, output_dir=out_dir_unagg, nan_value='const',
-    n_estimators=100
+# OTFI
+runner.execute_run(
+   classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg,
+   nan_value='const', n_estimators=100, method='otfi'
 )
-#runner.execute_run(
-#    par_classifier=clsfr, agg_by='user', relaxed=False,
-#    dump=False, output_dir=out_dir_agg_by_u, nan_value='const'
-#)
-#runner.execute_run(
-#    par_classifier=clsfr, agg_by='user', relaxed=True,
-#    dump=True, output_dir=out_dir_agg_by_u_r, nan_value='const'
-#)
+
+# clsfr = runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False,
+#     dump=True, output_dir=out_dir_unagg, nan_value='const',
+#     n_estimators=100
+# )
+# runner.execute_run(
+#     par_classifier=clsfr, agg_by='user', relaxed=False,
+#     dump=False, output_dir=out_dir_agg_by_u, nan_value='mean'
+# )
+# runner.execute_run(
+#     par_classifier=clsfr, agg_by='user', relaxed=True,
+#     dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
+# )
