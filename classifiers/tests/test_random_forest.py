@@ -37,8 +37,10 @@ class TestRandomForest():
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.98, random_state=19
         )
-        forest.fit(X_train, y_train)
-        skforest.fit(X_train, y_train)
+        forest_clas_tool = ClassificationTool(forest)
+        skforest_clas_tool = ClassificationTool(skforest)
+        forest_clas_tool.train_classifier((X_train, y_train))
+        skforest_clas_tool.train_classifier((X_train, y_train))
 
         forest_output_file = os.path.join(ROOT_DIR, 'outputs/forest.test')
         skforest_output_file = os.path.join(ROOT_DIR, 'outputs/skforest.test')
@@ -46,9 +48,6 @@ class TestRandomForest():
             os.remove(forest_output_file)
         if os.path.isfile(skforest_output_file):
             os.remove(skforest_output_file)
-
-        forest_clas_tool = ClassificationTool(forest)
-        skforest_clas_tool = ClassificationTool(skforest)
 
         with Parallel(n_jobs=-1) as p:
             forest_clas_tool.save_predictions(

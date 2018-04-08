@@ -11,7 +11,8 @@ class ClassificationTool():
         :param tr_data: Training data in a tuple (features, labels)
         Features are a pd.DataFrame, labels a list
         """
-        if self.classifier.trained:
+        # Check if the classifier is already trained.
+        if hasattr(self.classifier, 'estimators_'):
             return
         else:
             self.classifier.fit(tr_data[0], tr_data[1])

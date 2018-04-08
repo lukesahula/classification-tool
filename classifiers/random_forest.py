@@ -16,7 +16,6 @@ class RandomForest():
         self.n_jobs = n_jobs
         self.n_estimators = n_estimators
         self.method = method
-        self.trees = None
         self.feature_matrix = None
         self.labels = None
         self.trained = False
@@ -31,7 +30,7 @@ class RandomForest():
         self.feature_matrix = feature_matrix
         self.labels = labels
         random_seeds = self.random_state.randint(0, 10000, self.n_estimators)
-        self.trees = Parallel(n_jobs=self.n_jobs)(
+        self.estimators_ = Parallel(n_jobs=self.n_jobs)(
              delayed(self.init_tree)(seed) for seed in random_seeds
         )
         self.trained = True
@@ -42,7 +41,7 @@ class RandomForest():
         return values[m]
 
     def predict(self, observations, parallel):
-        ind_predictions = parallel(delayed(tree.predict)(observations) for tree in self.trees)
+        ind_predictions = parallel(delayed(tree.predict)(observations) for tree in self.estimators_)
         return [self.mode(ind_pred) for ind_pred in zip(*ind_predictions)]
 
     def sample_dataset(self, seed):
