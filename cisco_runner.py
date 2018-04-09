@@ -224,6 +224,10 @@ class CiscoRunner():
         with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
+                if method == 'otfi':
+                    t_data = (
+                        t_data[0].replace(to_replace=-1000000, value=np.nan), t_data[1], t_data[2]
+                    )
                 clas_tool.save_predictions(
                     t_data,
                     predictions_output,
@@ -311,7 +315,7 @@ out_corr = os.path.join('corr_outputs', out_dir)
 out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
-
+out_dir_otfi = os.path.join('runner_outputs', out_dir, 'otfi')
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 
@@ -326,7 +330,7 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 # OTFI
 runner.execute_run(
-   classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_unagg,
+   classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_otfi,
    nan_value='const', n_estimators=100, method='otfi'
 )
 
