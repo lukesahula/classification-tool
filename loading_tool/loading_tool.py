@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import numbers
 import glob
 from collections import defaultdict
 
@@ -41,8 +42,8 @@ class LoadingTool():
         """
         if not value:
             return data
-        if value == 'const':
-            return data.replace(to_replace=np.nan, value=-1000000)
+        if isinstance(value, numbers.Number):
+            return data.replace(to_replace=np.nan, value=value)
         if value == 'mean':
             if self.means is None:
                 self.means = data.mean()
@@ -160,9 +161,10 @@ class LoadingTool():
                 self.bin_samples,
                 random_state=self.seed
             )
-
-            if sampled.nunique() == 1:
+            if sampled.nunique() == 0:
                 bins.append([sampled.iloc[0]])
+            elif sampled.nunique() == 1:
+                bins.append(sampled.dropna().unique())
             else:
                 bins.append(
                     list(
@@ -186,16 +188,18 @@ class LoadingTool():
         if not self.bins:
             self.bins = self.__compute_bins(dataset[0])
 
-        quantized_frame = pd.DataFrame()
-
-        for column in dataset[0].columns:
-            digitized_list = np.digitize(dataset[0][column], self.bins[column])
-            quantized_frame[column] = [
-                self.bins[column][i] if i < len(self.bins[column])
-                else self.bins[column][i-1] for i in digitized_list
-            ]
+        quantized_frame = dataset[0].apply(self.__quantize_column, axis=0)
 
         return quantized_frame.astype(np.float32), dataset[1], dataset[2]
+
+    def __quantize_column(self, column):
+        digitized = np.digitize(column, self.bins[column.name], right=True)
+        column = [
+            np.nan if np.isnan(column[i])
+            else self.bins[column.name][digitized[i]] if digitized[i] < len(self.bins[column.name])
+            else self.bins[column.name][digitized[i]-1] for i in range(len(digitized))
+        ]
+        return column
 
     def load_classifications(self, file_path, delimiter, read_metadata=False):
         """

@@ -7,6 +7,7 @@ from loading_tool.loading_tool import LoadingTool
 from classification_tool.classification_tool import ClassificationTool
 from evaluation_tool.evaluation_tool import EvaluationTool
 from classifiers.random_forest import RandomForest as RF
+from classifiers.decision_tree import DecisionTree as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.externals import joblib
 from collections import defaultdict
@@ -162,7 +163,7 @@ class CiscoRunner():
         # Configutarion for data preprocessing
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 4000,
+            'neg_samples': 50000,
             'bin_samples': 1000,
             'seed': random_state,
             'nan_value': nan_value
@@ -180,13 +181,20 @@ class CiscoRunner():
                     n_jobs=n_jobs,
                     random_state=random_state
                 )
+            elif classifier == DT:
+                clsfr = DT(
+                    max_features=max_features,
+                    min_samples_split=min_samples_split,
+                    random_state=random_state,
+                    method=method
+                )
             else:
                 clsfr = RF(
                     max_features=max_features,
                     min_samples_split=min_samples_split,
-                    random_state=random_state,
-                    n_jobs=n_jobs,
                     n_estimators=n_estimators,
+                    n_jobs=n_jobs,
+                    random_state=random_state,
                     method=method
                 )
 
@@ -195,9 +203,9 @@ class CiscoRunner():
             tr_data = loading_tool.load_training_data(tr_path)
             tr_data = loading_tool.quantize_data(tr_data)
 
-            if method == 'otfi':
+            if method == 'mia':
                 tr_data = (
-                    tr_data[0].replace(to_replace=-1000000, value=np.nan), tr_data[1], tr_data[2]
+                    tr_data[0].replace(to_replace=np.nan, value=-1000000), tr_data[1], tr_data[2]
                 )
 
             clas_tool.train_classifier(tr_data)
@@ -224,15 +232,10 @@ class CiscoRunner():
         with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
-                if method == 'otfi':
-                    t_data = (
-                        t_data[0].replace(to_replace=-1000000, value=np.nan), t_data[1], t_data[2]
-                    )
                 clas_tool.save_predictions(
                     t_data,
                     predictions_output,
                     parallel,
-                    method
                 )
         t_data = None
 
@@ -277,9 +280,9 @@ class CiscoRunner():
         }
         loading_tool = LoadingTool(sampling_settings)
         data = loading_tool.load_training_data(path)[0]
-        corr_matrix = data.corr()
+        corr_matrix = data.corr().fillna(0)
         corr_path = os.path.join(output_dir, 'corr')
-        corr_matrix.to_csv(corr_path, na_rep='NaN', sep='\t', encoding='utf-8')
+        corr_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
         norm = np.linalg.norm(corr_matrix)
         norm_path = os.path.join(output_dir, 'norm')
         with open(norm_path, 'w') as f:
@@ -299,9 +302,9 @@ class CiscoRunner():
         data = loading_tool.load_training_data(path)[0]
         data[~pd.isnull(data)] = 1
         data[pd.isnull(data)] = 0
-        corr_matrix = data.corr()
+        corr_matrix = data.corr().fillna(0)
         corr_path = os.path.join(output_dir, 'corr_missingness')
-        corr_matrix.to_csv(corr_path, na_rep='NaN', sep='\t', encoding='utf-8')
+        corr_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
         norm = np.linalg.norm(corr_matrix)
         norm_path = os.path.join(output_dir, 'norm_missingness')
         with open(norm_path, 'w') as f:
@@ -316,6 +319,7 @@ out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 out_dir_otfi = os.path.join('runner_outputs', out_dir, 'otfi')
+out_dir_mia = os.path.join('runner_outputs', out_dir, 'mia')
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 
@@ -330,20 +334,36 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 # OTFI
 runner.execute_run(
-   classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_otfi,
-   nan_value='const', n_estimators=100, method='otfi'
+    classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
+    nan_value=None, n_estimators=20, method='otfi'
 )
 
-clsfr = runner.execute_run(
-     classifier=RF, agg_by=None, relaxed=False,
-     dump=True, output_dir=out_dir_unagg, nan_value='const',
-     n_estimators=100
-)
-runner.execute_run(
-     par_classifier=clsfr, agg_by='user', relaxed=False,
-     dump=False, output_dir=out_dir_agg_by_u, nan_value='mean'
-)
-runner.execute_run(
-     par_classifier=clsfr, agg_by='user', relaxed=True,
-     dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
-)
+
+# MIA
+# runner.execute_run(
+#    classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_mia,
+#    nan_value=None, n_estimators=20, method='mia'
+# )
+
+# UNAG RFC
+# clsfr = runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False,
+#     dump=True, output_dir=out_dir_unagg, nan_value=-1000000,
+#     n_estimators=20
+# )
+
+# UNAG RFC_scikit
+# clsfr = runner.execute_run(
+#     classifier=RFC, agg_by=None, relaxed=False,
+#     dump=True, output_dir=out_dir_unagg, nan_value=-1000000,
+#     n_estimators=100
+# )
+
+# runner.execute_run(
+#      par_classifier=clsfr, agg_by='user', relaxed=False,
+#      dump=False, output_dir=out_dir_agg_by_u, nan_value='mean'
+# )
+# runner.execute_run(
+#      par_classifier=clsfr, agg_by='user', relaxed=True,
+#      dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
+# )

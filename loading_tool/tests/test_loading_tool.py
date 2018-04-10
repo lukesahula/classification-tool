@@ -46,7 +46,7 @@ class TestLoadingTool(object):
             'neg_samples': 2,
             'bin_samples': 2,
             'seed': 0,
-            'nan_value': 'const'
+            'nan_value': -1000000
         }
         loading_tool = LoadingTool(sampling_settings)
         result = []
@@ -110,7 +110,7 @@ class TestLoadingTool(object):
             'neg_samples': 2,
             'bin_samples': 2,
             'seed': 0,
-            'nan_value': 'const'
+            'nan_value': -1000000
         }
         loading_tool = LoadingTool(sampling_settings)
         result = loading_tool.load_training_data(path)
@@ -236,7 +236,7 @@ class TestLoadingTool(object):
             'neg_samples': None,
             'bin_samples': 3,
             'seed': 0,
-            'nan_value': 'const'
+            'nan_value': -1000000
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)
@@ -248,8 +248,8 @@ class TestLoadingTool(object):
 
         expected = pd.DataFrame([
             [11.25, 19.375, 14.375, 10],
-            [10.625, 10.625, 10.625, 10],
-            [15.625, 15.625, 15.625, 10],
+            [10.00, 10.00, 10.00, 10],
+            [15.00, 15.00, 15.00, 10],
             [20.0, 20.0, 20.0, 10]
         ])
         assert np.allclose(expected, dataset[0])
@@ -261,15 +261,15 @@ class TestLoadingTool(object):
             'neg_samples': None,
             'bin_samples': 3,
             'seed': 0,
-            'nan_value': 'const'
+            'nan_value': -1000000
         }
         dataset = pd.read_csv(path, sep=';', header=None)
         loading_tool = LoadingTool(sampling_settings)
         dataset = loading_tool.quantize_data((dataset, None, None))
 
         expected = pd.DataFrame([
-            [10.625, 10.625, 10.625, 10],
-            [15.625, 15.625, 15.625, 10],
+            [10.0, 10.0, 10.0, 10],
+            [15.0, 15.0, 15.0, 10],
             [20.0, 20.0, 20.0, 10]
         ])
         assert np.allclose(expected, dataset[0])

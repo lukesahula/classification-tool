@@ -9,7 +9,7 @@ class LeafNode():
     def __init__(self, label):
         self.label = label
 
-    def evaluate(self, observation):
+    def evaluate(self, observation=None, method=None):
         return self.label
 
 
@@ -21,12 +21,17 @@ class DecisionNode():
         self.value = value
         self.known_vals = known_vals
 
-    def evaluate(self, observation):
-        if pd.isnull(observation[self.attr]):
-            observation[self.attr] = np.random.choice(
-                a=self.known_vals.index,
-                p=self.known_vals.values
-            )
+    def evaluate(self, observation, method=None):
+        if method == 'otfi':
+            if np.isnan(observation[self.attr]):
+                value = np.random.choice(
+                    a=self.known_vals.index,
+                    p=self.known_vals.values
+                )
+                if value <= self.value:
+                    return self.left_child.evaluate(observation, method)
+                else:
+                    return self.right_child.evaluate(observation, method)
 
         if observation[self.attr] <= self.value:
             return self.left_child.evaluate(observation)
@@ -45,11 +50,34 @@ class DecisionTree():
     def fit(self, feature_matrix, labels):
         if self.method == 'otfi':
             self.root = self.__build_tree_otfi(feature_matrix, labels)
+        elif self.method == 'mia':
+            self.root = self.__build_tree_mia(feature_matrix, labels)
         else:
             self.root = self.__build_tree(feature_matrix, labels)
 
     def predict(self, observations):
-        return [self.root.evaluate(row) for row in observations.itertuples(False)]
+        return [self.root.evaluate(row, self.method) for row in observations.itertuples(False)]
+
+    def __build_tree_mia(self, feature_matrix, labels):
+        if self.__should_create_leaf_node(feature_matrix, labels):
+            return self.__create_leaf_node(labels)
+
+        sampled_columns = self.__get_feature_sample(feature_matrix)
+        if sampled_columns is None:
+            return self.__create_leaf_node(labels)
+
+        attr, value, _, split_type = self.__find_best_split_parameters_mia(sampled_columns, labels)
+        threshold = self.__get_split_threshold_mia(feature_matrix, labels, attr, value, split_type)
+        labels_left = labels.loc[threshold]
+        labels_right = labels.loc[~threshold]
+
+        if len(labels_left) == 0 or len(labels_right) == 0:
+            return self.__create_leaf_node(pd.concat((labels_left, labels_right)))
+
+        left_child = self.__build_tree_mia(feature_matrix.loc[threshold, :], labels_left)
+        right_child = self.__build_tree_mia(feature_matrix.loc[~threshold, :], labels_right)
+
+        return DecisionNode(left_child, right_child, attr, value)
 
     def __build_tree_otfi(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):
@@ -122,7 +150,7 @@ class DecisionTree():
         else:
             return feature_matrix
 
-    def __find_best_split_parameters(self, feature_matrix, labels):
+    def __find_best_split_parameters(self, feature_matrix, labels, return_entropy=False):
         min_entropy = float('inf')
         split = None, None
         for column in feature_matrix.columns:
@@ -137,8 +165,35 @@ class DecisionTree():
                 current_entropy = self.__compute_entropy(counts_l, counts_r)
                 if current_entropy < min_entropy:
                     min_entropy = current_entropy
-                    split = column, value
+                    split = (column, value, min_entropy) if return_entropy else (column, value)
         return split
+
+    def __find_best_split_parameters_mia(self, feature_matrix, labels):
+        split_a = self.__find_best_split_parameters(feature_matrix, labels, return_entropy=True)
+        matrix_b = feature_matrix.replace(to_replace=-1000000, value=10000000)
+        split_b = self.__find_best_split_parameters(matrix_b, labels, return_entropy=True)
+        matrix_c = feature_matrix.replace(to_replace=-1000000, value=1)
+        matrix_c[matrix_c != 1] = 0
+        split_c = self.__find_best_split_parameters(matrix_c, labels, return_entropy=True)
+
+        best_split = split_a[0], split_a[1], split_a[2], 'a'
+        if split_b[2] < best_split[2]:
+            best_split = split_b[0], split_b[1], split_b[2], 'b'
+        if split_c[2] < best_split[2]:
+            best_split = split_c[0], split_c[1], split_c[2], 'c'
+        return best_split
+
+    def __get_split_threshold_mia(self, feature_matrix, labels, attr, value, split_type):
+        if split_type == 'a':
+            threshold = feature_matrix.loc[:, attr].values <= value
+        if split_type == 'b':
+            matrix_b = feature_matrix.replace(to_replace=-1000000, value=1000000)
+            threshold = matrix_b.loc[:, attr].values <= value
+        if split_type == 'c':
+            matrix_c = feature_matrix.replace(to_replace=-1000000, value=1)
+            matrix_c[matrix_c != 1] = 0
+            threshold = matrix_c.loc[:, attr].values <= value
+        return threshold
 
     def __get_split_threshold_otfi(self, feature_matrix, labels, attr, value):
         known_vals = feature_matrix[attr].dropna().value_counts(normalize=True)

@@ -19,19 +19,23 @@ class RandomForest():
         self.feature_matrix = None
         self.labels = None
         self.trained = False
+        self.grown = 0
 
-    def init_tree(self, seed):
+    def init_tree(self, seed, count):
         indices = self.sample_dataset(seed)
         tree = DecisionTree(self.max_features, self.min_samples_split, seed, method=self.method)
         tree.fit(self.feature_matrix.loc[indices], self.labels[indices])
+        self.grown += 1
+        print('tree ' + str(count) + ' grown')
         return tree
 
     def fit(self, feature_matrix, labels):
         self.feature_matrix = feature_matrix
         self.labels = labels
+        counts = list(range(100))
         random_seeds = self.random_state.randint(0, 10000, self.n_estimators)
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-             delayed(self.init_tree)(seed) for seed in random_seeds
+             delayed(self.init_tree)(seed, count) for seed, count in zip(random_seeds, counts)
         )
         self.trained = True
 
