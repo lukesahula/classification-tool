@@ -219,7 +219,7 @@ class CiscoRunner():
         )
 
         if dump:
-            joblib.dump(ser_classifier, clsfr_output, compress=9)
+            joblib.dump(ser_classifier, clsfr_output, compress=3)
 
         with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
@@ -334,16 +334,16 @@ runner.execute_run(
    nan_value='const', n_estimators=100, method='otfi'
 )
 
-# clsfr = runner.execute_run(
-#     classifier=RF, agg_by=None, relaxed=False,
-#     dump=True, output_dir=out_dir_unagg, nan_value='const',
-#     n_estimators=100
-# )
-# runner.execute_run(
-#     par_classifier=clsfr, agg_by='user', relaxed=False,
-#     dump=False, output_dir=out_dir_agg_by_u, nan_value='mean'
-# )
-# runner.execute_run(
-#     par_classifier=clsfr, agg_by='user', relaxed=True,
-#     dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
-# )
+clsfr = runner.execute_run(
+     classifier=RF, agg_by=None, relaxed=False,
+     dump=True, output_dir=out_dir_unagg, nan_value='const',
+     n_estimators=100
+)
+runner.execute_run(
+     par_classifier=clsfr, agg_by='user', relaxed=False,
+     dump=False, output_dir=out_dir_agg_by_u, nan_value='mean'
+)
+runner.execute_run(
+     par_classifier=clsfr, agg_by='user', relaxed=True,
+     dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
+)

@@ -23,7 +23,10 @@ class DecisionNode():
 
     def evaluate(self, observation):
         if pd.isnull(observation[self.attr]):
-            observation[self.attr] = self.known_vals.sample()
+            observation[self.attr] = np.random.choice(
+                a=self.known_vals.index,
+                p=self.known_vals.values
+            )
 
         if observation[self.attr] <= self.value:
             return self.left_child.evaluate(observation)
@@ -138,9 +141,13 @@ class DecisionTree():
         return split
 
     def __get_split_threshold_otfi(self, feature_matrix, labels, attr, value):
-        known_vals = feature_matrix[attr].dropna()
+        known_vals = feature_matrix[attr].dropna().value_counts(normalize=True)
         imputed = feature_matrix[attr].apply(
-            lambda x: np.where(pd.isnull(x), known_vals.sample(replace=True), x)
+            lambda x: np.where(
+                pd.isnull(x),
+                self.random_state.choice(a=known_vals.index, p=known_vals.values, replace=True),
+                x
+            )
         )
         threshold = imputed.loc[:].values <= value
         return threshold, known_vals
