@@ -61,6 +61,10 @@ class CiscoRunner():
         )
         return nan_ratios
 
+    def __write(self, output, text):
+        with open(output, 'a', encoding='utf-8') as f:
+            tee(text, f)
+
     def __write_stats(self, output, eval_tool, stats, nan_ratios=None):
         def write_stats_above_prec_threshold(threshold, eval_tool, stats, f):
             labels = eval_tool.get_labels_with_prec_above_thres(
@@ -200,9 +204,9 @@ class CiscoRunner():
 
             loading_tool = LoadingTool(sampling_settings)
             clas_tool = ClassificationTool(clsfr)
-            print('Loading training data')
+            self.__write(eval_output, 'Loading training data')
             tr_data = loading_tool.load_training_data(tr_path)
-            print('Initiate quantization')
+            self.__write(eval_output, 'Initiate quantization')
             tr_data = loading_tool.quantize_data(tr_data)
 
             if method == 'mia':
@@ -210,7 +214,7 @@ class CiscoRunner():
                     tr_data[0].replace(to_replace=np.nan, value=-1000000), tr_data[1], tr_data[2]
                 )
 
-            print('Initiate growing')
+            self.__write(eval_output, 'Initiate growing')
             clas_tool.train_classifier(tr_data)
             tr_data = None
         elif type(par_classifier) == SerializableClassifier:
@@ -230,10 +234,10 @@ class CiscoRunner():
         )
 
         if dump:
-            print('Dumping classifier')
+            self.__write(eval_output, 'Dumping classifier')
             joblib.dump(ser_classifier, clsfr_output, compress=3)
 
-        print('Predicting')
+        self.__write(eval_output, 'Predicting')
         with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
@@ -251,7 +255,7 @@ class CiscoRunner():
         else:
             stats = defaultdict(lambda: defaultdict(int))
 
-        print('Begin evaluation')
+        self.__write(eval_output, 'Begin evaluation')
         for chunk in loading_tool.load_classifications(
                 predictions_output, ';', True):
             if agg_by:
