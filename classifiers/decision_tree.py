@@ -14,15 +14,31 @@ class LeafNode():
 
 
 class DecisionNode():
-    def __init__(self, left_child, right_child, attr, value, known_vals=None):
+    def __init__(self, left_child, right_child, attr, value, known_vals=None, split_type=None):
         self.left_child = left_child
         self.right_child = right_child
         self.attr = attr
         self.value = value
         self.known_vals = known_vals
+        self.split_type = split_type
 
     def evaluate(self, observation, method=None):
-        if method == 'otfi':
+        if method == 'mia':
+            value = observation[self.attr]
+            if self.split_type == 'a' and np.isnan(value):
+                value = -1000000
+            elif self.split_type == 'b' and np.isnan(value):
+                value = 10000000
+            elif self.split_type == 'c':
+                if np.isnan(value):
+                    value = 1
+                else:
+                    value = 0
+            if value <= self.value:
+                return self.left_child.evaluate(observation, method)
+            else:
+                return self.right_child.evaluate(observation, method)
+        elif method == 'otfi':
             if np.isnan(observation[self.attr]):
                 value = np.random.choice(
                     a=self.known_vals.index,
@@ -32,11 +48,11 @@ class DecisionNode():
                     return self.left_child.evaluate(observation, method)
                 else:
                     return self.right_child.evaluate(observation, method)
-
-        if observation[self.attr] <= self.value:
-            return self.left_child.evaluate(observation)
         else:
-            return self.right_child.evaluate(observation)
+            if observation[self.attr] <= self.value:
+                return self.left_child.evaluate(observation)
+            else:
+                return self.right_child.evaluate(observation)
 
 
 class DecisionTree():
@@ -77,7 +93,7 @@ class DecisionTree():
         left_child = self.__build_tree_mia(feature_matrix.loc[threshold, :], labels_left)
         right_child = self.__build_tree_mia(feature_matrix.loc[~threshold, :], labels_right)
 
-        return DecisionNode(left_child, right_child, attr, value)
+        return DecisionNode(left_child, right_child, attr, value, split_type=split_type)
 
     def __build_tree_otfi(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):

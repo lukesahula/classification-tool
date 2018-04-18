@@ -191,9 +191,9 @@ class LoadingTool():
         return quantized_frame.astype(np.float32), dataset[1], dataset[2]
 
     def __quantize_column(self, column):
-        if column.nunique() == 0:
-            return column
         digitized = np.digitize(column, self.bins[column.name], right=True)
+        if sum(digitized) == 0:
+            return column
 
         first_condition = np.isnan(column)
         second_condition = digitized < len(self.bins[column.name])
