@@ -167,14 +167,12 @@ class LoadingTool():
                 bins.append(sampled.dropna().unique())
             else:
                 bins.append(
-                    list(
-                        pd.qcut(
-                            x=sampled,
-                            q=16,
-                            retbins=True,
-                            duplicates='drop'
-                        )[1]
-                    )
+                    pd.qcut(
+                        x=sampled,
+                        q=16,
+                        retbins=True,
+                        duplicates='drop'
+                    )[1]
                 )
         return bins
 
@@ -193,12 +191,16 @@ class LoadingTool():
         return quantized_frame.astype(np.float32), dataset[1], dataset[2]
 
     def __quantize_column(self, column):
+        if column.nunique() == 0:
+            return column
         digitized = np.digitize(column, self.bins[column.name], right=True)
-        column = [
-            np.nan if np.isnan(column[i])
-            else self.bins[column.name][digitized[i]] if digitized[i] < len(self.bins[column.name])
-            else self.bins[column.name][digitized[i]-1] for i in range(len(digitized))
-        ]
+
+        first_condition = np.isnan(column)
+        second_condition = digitized < len(self.bins[column.name])
+        quantized_column = self.bins[column.name][digitized - 1]
+        quantized_column[first_condition] = np.nan
+        quantized_column[second_condition] = self.bins[column.name][digitized[second_condition]]
+        column = quantized_column
         return column
 
     def load_classifications(self, file_path, delimiter, read_metadata=False):

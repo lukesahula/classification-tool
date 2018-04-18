@@ -239,6 +239,7 @@ class TestLoadingTool(object):
             'nan_value': -1000000
         }
         dataset = pd.read_csv(path, sep=';', header=None)
+        dataset = dataset.astype(np.float32)
         loading_tool = LoadingTool(sampling_settings)
         loading_tool.quantize_data((dataset, None, None))
         dataset.loc[-1] = [11, 19, 14, 10]
@@ -247,10 +248,10 @@ class TestLoadingTool(object):
         dataset = loading_tool.quantize_data((dataset, None, None))
 
         expected = pd.DataFrame([
-            [11.25, 19.375, 14.375, 10],
-            [10.00, 10.00, 10.00, 10],
-            [15.00, 15.00, 15.00, 10],
-            [20.0, 20.0, 20.0, 10]
+            [11.25, 19.375, 14.375, 10.0],
+            [10.00, 10.00, 10.00, 10.0],
+            [15.00, 15.00, 15.00, 10.0],
+            [20.0, 20.0, 20.0, 10.0]
         ])
         assert np.allclose(expected, dataset[0])
 
@@ -264,13 +265,14 @@ class TestLoadingTool(object):
             'nan_value': -1000000
         }
         dataset = pd.read_csv(path, sep=';', header=None)
+        dataset = dataset.astype(np.float32)
         loading_tool = LoadingTool(sampling_settings)
         dataset = loading_tool.quantize_data((dataset, None, None))
 
         expected = pd.DataFrame([
-            [10.0, 10.0, 10.0, 10],
-            [15.0, 15.0, 15.0, 10],
-            [20.0, 20.0, 20.0, 10]
+            [10.0, 10.0, 10.0, 10.0],
+            [15.0, 15.0, 15.0, 10.0],
+            [20.0, 20.0, 20.0, 10.0]
         ])
         assert np.allclose(expected, dataset[0])
 
