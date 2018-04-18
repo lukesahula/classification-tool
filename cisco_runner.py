@@ -200,7 +200,9 @@ class CiscoRunner():
 
             loading_tool = LoadingTool(sampling_settings)
             clas_tool = ClassificationTool(clsfr)
+            print('Loading training data')
             tr_data = loading_tool.load_training_data(tr_path)
+            print('Initiate quantization')
             tr_data = loading_tool.quantize_data(tr_data)
 
             if method == 'mia':
@@ -208,6 +210,7 @@ class CiscoRunner():
                     tr_data[0].replace(to_replace=np.nan, value=-1000000), tr_data[1], tr_data[2]
                 )
 
+            print('Initiate growing')
             clas_tool.train_classifier(tr_data)
             tr_data = None
         elif type(par_classifier) == SerializableClassifier:
@@ -227,8 +230,10 @@ class CiscoRunner():
         )
 
         if dump:
+            print('Dumping classifier')
             joblib.dump(ser_classifier, clsfr_output, compress=3)
 
+        print('Predicting')
         with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
@@ -246,6 +251,7 @@ class CiscoRunner():
         else:
             stats = defaultdict(lambda: defaultdict(int))
 
+        print('Begin evaluation')
         for chunk in loading_tool.load_classifications(
                 predictions_output, ';', True):
             if agg_by:
@@ -346,11 +352,11 @@ runner.execute_run(
 # )
 
 # UNAG RFC
-# clsfr = runner.execute_run(
-#     classifier=RF, agg_by=None, relaxed=False,
-#     dump=True, output_dir=out_dir_unagg, nan_value=-1000000,
-#     n_estimators=20
-# )
+clsfr = runner.execute_run(
+    classifier=RF, agg_by=None, relaxed=False,
+    dump=False, output_dir=out_dir_unagg, nan_value=-1000000,
+    n_estimators=20
+)
 
 # UNAG RFC_scikit
 # clsfr = runner.execute_run(
