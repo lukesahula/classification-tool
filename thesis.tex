@@ -49,20 +49,24 @@
     TODO: Random forests
   \newpage
   \section{Handling missing values}
-    In statistics {\it missing values} or {\it missing data} mark the absence of value in a feature variable in an observation. Missing data in a dataset make it difficult for machine learning algorithms to properly learn from it. Depending on their amount and type they can hinder the classifiers performance and even, in some cases, render their output completely worthless.
+    In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observation. Missing data in a dataset make it difficult for machine learning algorithms to properly learn from it. Depending on their amount and type they can hinder the classifiers performance and even, in some cases, render their output completely worthless.
     \\~\\
     There are various ways of handling these missing values, some as simple as dropping the the compromised observations altogether, leaving only those that are fully present. This however, cannot be done when there are missing data somewhere in most of the observations. Other simple methods include replacing missing data with the mean or median of all the non-missing data of the feature in question, or replacing the missing data with a constant outside of the interval of that feature's value. The process of replacing the missing data is called {\it imputation}.
     \\~\\
-    More sophisticated methods of imputation also exist, a few of which are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. Some imputation algorithms are very slow and using them in experiments with big datasets can be very time-consuming.
+    More sophisticated methods of imputation also exist, a few of which are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
     \subsection{Related work}
       TODO: Related work
     \subsection{Types of missingness}
-      TODO: Types of missingness
+      Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms. If the missing data are a random subset of all observations, they will have a similar distribution. There is no relationship between whether a value is missing and any other values in the data set, missing or observed. These values are {\it missing completely at random} (MCAR). When data are MCAR, an analysis of it is unbiased. However, data that are truly MCAR are not encountered often.
+      \\~\\
+      When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR). There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
+      \\~\\
+      The last missing data mechanism is {\it missing not at random} (MNAR). It means that there is a relationship between value of the variable that is missing and the reason why it is missing in the first place. For example a male suffering from a strong depression can decide not to fill a depression survey because of said depression.
     \subsection{Selected algorithms}
       TODO: Selected algorithms
-      \subsection{On the fly imputation}
+      \subsubsection{On the fly imputation}
         TODO: On the fly imputation
-      \subsection{Missingness incorporated in attributes}
+      \subsubsection{Missingness incorporated in attributes}
         TODO: Missingness incorporated in attributes
   \newpage
   \section{Network dataset}
