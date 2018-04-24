@@ -1,0 +1,134 @@
+\documentclass[11pt]{article}
+
+\usepackage{mathtools} 
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage[]{algorithm2e}
+\usepackage{url}
+
+\urlstyle{same}
+
+\addto\captionsczech{
+  \renewcommand{\contentsname}
+    {Table of contents}
+}
+
+\title{Handling Missing Values in Decision Forests in the Encrypted Network Traffic}
+\date{2018-04-24}
+\author{Lukáš Sahula}
+
+\begin{document}
+  \maketitle
+  \newpage
+  \section*{Acknowledgement}
+    TODO: Acknowledgement
+  \newpage
+  \section*{Abstract}
+    TODO: Abstract
+    \\~\\
+    {\bf Keywords:} malware, classification, random forests, supervised learning, missing values, imputation 
+    \\~\\
+    TODO: Abstrakt cz
+    \\~\\
+    {\bf Klíčová slova:} malware, klasifikace, náhodné lesy, učení s učitelem, chybějící hodnoty, imputace 
+  \newpage
+  \tableofcontents
+  \newpage
+
+  \section*{Introduction}
+  \addcontentsline{toc}{section}{Introduction}
+    TODO: Introduction
+    \subsection{Why}
+      TODO: Why
+    \subsection{Summary}
+      TODO: Summary
+    \subsection{Intro to classification}
+      TODO: Intro to classification
+  \newpage
+  \section{Random forests}
+    TODO: Random forests
+  \newpage
+  \section{Handling missing values}
+    In statistics {\it missing values} or {\it missing data} mark the absence of value in a feature variable in an observation. Missing data in a dataset make it difficult for machine learning algorithms to properly learn from it. Depending on their amount and type they can hinder the classifiers performance and even, in some cases, render their output completely worthless.
+    \\~\\
+    There are various ways of handling these missing values, some as simple as dropping the the compromised observations altogether, leaving only those that are fully present. This however, cannot be done when there are missing data somewhere in most of the observations. Other simple methods include replacing missing data with the mean or median of all the non-missing data of the feature in question, or replacing the missing data with a constant outside of the interval of that feature's value. The process of replacing the missing data is called {\it imputation}.
+    \\~\\
+    More sophisticated methods of imputation also exist, a few of which are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. Some imputation algorithms are very slow and using them in experiments with big datasets can be very time-consuming.
+    \subsection{Related work}
+      TODO: Related work
+    \subsection{Types of missingness}
+      TODO: Types of missingness
+    \subsection{Selected algorithms}
+      TODO: Selected algorithms
+      \subsection{On the fly imputation}
+        TODO: On the fly imputation
+      \subsection{Missingness incorporated in attributes}
+        TODO: Missingness incorporated in attributes
+  \newpage
+  \section{Network dataset}
+    TODO: Network datasets
+    \subsection{Dataset description}
+      TODO: Dataset description
+    \subsection{Analysis with correlation}
+      TODO: Analysis withcorrelation
+    \subsection{Why most of the algorithms is not relevant}
+      TODO: Why most of the algorithms is not relevant (big data)
+  \newpage
+  \section{Experiments}
+    TODO: Experiments
+    \subsection{Evaluation metrics}
+      TODO: Evaluation metrics
+  \newpage
+  \section*{Conclusion}
+  \addcontentsline{toc}{section}{Conclusion}
+    TODO: Conclusion
+  \newpage
+  \begin{thebibliography}{9}
+    \bibitem{brabec}
+      Jan Brabec,
+      {\it Decision Forests in the Task of Semi-Supervised Learning},
+      Czech Technical University in Prague. Computing and Information Centre, 
+      2017-01-29
+
+    \bibitem{breiman}
+      Leo Breiman,
+      {\it Manual--Setting Up, Using And Understanding Random Forests},
+      University of California, Berkeley. Department of Statistics,
+      Version 4.0,
+      Available at \url{www.stat.berkeley.edu/~breiman/} as of 2018-01-12.
+    
+    \bibitem{python}
+      Python Software Foundation,
+      {\it Python Language Reference},
+      Version 3.6,
+      Available at \url{www.python.org} as of 2018-01-12.
+ 
+    \bibitem{pandas}
+      Wes McKinney,
+      {\it pandas: a python data analysis library},
+      2008,
+      Available at \url{www.pandas.pydata.org} as of 2018-01-12.
+
+    \bibitem{numpy}
+      Travis Oliphant,
+      {\it NumPy},
+      2005,
+      Available at \url{www.numpy.org} as of 2018-01-12.
+
+    \bibitem{scikit}
+      Pedregosa, F. and Varoquaux, G. and Gramfor, A. and Michel, V. and Thirion, B. and Grisel, O. and Blondel, M. and Prettenhofer, P. and Weiss, R. and Dubourg, V. and Vanderplas, J. and Passos, A. and Cournapeau, D. and Brucher, M. and Perrot, M. and Duchesnay, E.,
+      {\it Scikit-learn: Machine Learning in Python},
+      Journal of Machine Learning Research,
+      Volume 12,
+      2011,
+      Available at \url{www.scikit-learn.org} as of 2018-01-12.
+
+    \bibitem{bitbucket}
+      Atlassian Corporation Plc,
+      {\it Bitbucket},
+      Available at \url{www.bitbucket.org} as of 2018-01-12.
+       
+  \end{thebibliography}
+
+\end{document}
+
