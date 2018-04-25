@@ -5,6 +5,7 @@
 \usepackage[czech]{babel}
 \usepackage[]{algorithm2e}
 \usepackage{url}
+\usepackage{xcolor}
 
 \urlstyle{same}
 
@@ -21,14 +22,14 @@
   \maketitle
   \newpage
   \section*{Acknowledgement}
-    TODO: Acknowledgement
+    {\color{red}TODO}
   \newpage
   \section*{Abstract}
-    TODO: Abstract
+    {\color{red}TODO}
     \\~\\
     {\bf Keywords:} malware, classification, random forests, supervised learning, missing values, imputation 
     \\~\\
-    TODO: Abstrakt cz
+    {\color{red}TODO}
     \\~\\
     {\bf Klíčová slova:} malware, klasifikace, náhodné lesy, učení s učitelem, chybějící hodnoty, imputace 
   \newpage
@@ -37,16 +38,16 @@
 
   \section*{Introduction}
   \addcontentsline{toc}{section}{Introduction}
-    TODO: Introduction
+    {\color{red}TODO}
     \subsection{Why}
-      TODO: Why
+      {\color{red}TODO}
     \subsection{Summary}
-      TODO: Summary
+      {\color{red}TODO}
     \subsection{Intro to classification}
-      TODO: Intro to classification
+      {\color{red}TODO}
   \newpage
   \section{Random forests}
-    TODO: Random forests
+    {\color{red}TODO}
   \newpage
   \section{Handling missing values}
     In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observation. Missing data in a dataset make it difficult for machine learning algorithms to properly learn from it. Depending on their amount and type they can hinder the classifiers performance and even, in some cases, render their output completely worthless.
@@ -55,84 +56,48 @@
     \\~\\
     More sophisticated methods of imputation also exist, a few of which are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
     \subsection{Related work}
-      TODO: Related work
-    \subsection{Types of missingness}
+      {\color{red}TODO}
+    \subsection{Missing data mechanisms}
       Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms. If the missing data are a random subset of all observations, they will have a similar distribution. There is no relationship between whether a value is missing and any other values in the data set, missing or observed. These values are {\it missing completely at random} (MCAR). When data are MCAR, an analysis of it is unbiased. However, data that are truly MCAR are not encountered often.
       \\~\\
       When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR). There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
       \\~\\
       The last missing data mechanism is {\it missing not at random} (MNAR). It means that there is a relationship between value of the variable that is missing and the reason why it is missing in the first place. For example a male suffering from a strong depression can decide not to fill a depression survey because of said depression.
-    \subsection{Selected algorithms}
-      TODO: Selected algorithms
-      \subsubsection{On the fly imputation}
-        TODO: On the fly imputation
+    \subsection{Selected imputation algorithms}
+      {\color{red}TODO}
+      \subsubsection{On-the-fly-imputation}
+        {\it On-the-fly-imputation} (OTFI) or {\it Adaptive tree imputation} is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
+        \begin{enumerate}
+        \item First, the best split is calculated as usual, using only non-missing data.
+        \item After finding the best split, random values from the non-missing in-bag data within the current node are used to impute the missing values.
+        \item Once the data are imputed, the node is split into the left and right children nodes and the imputed data are reset back to missing.
+        \end{enumerate}
+        The values the algorithm uses to impute the missing data are stored within the decision node while growing the tree along with the respective frequencies in which they occur within the node's dataset. These are then used again to impute the missing values in the testing dataset at the time of prediction to decide whether the observation belongs to the left or to the right child. After being sent to the child node, the imputed data is reset to missing again and the process repeats.
       \subsubsection{Missingness incorporated in attributes}
-        TODO: Missingness incorporated in attributes
-  \newpage
+        {\it Missingness incorporated in attributes} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
+        \begin{itemize}
+        \item Split A: \{ $X \leq s$ or $X =$ missing \} versus \{ $X > s$ \}.
+        \item Split B: \{ $X \leq s$ \} versus \{ $X > s$ or $X =$ missing \}.
+        \item Split C: \{ $X =$ missing \} versus \{ $X =$ not missing \}.
+        \end{itemize}
+        After finding the best split in each approach separately, the algorithm then chooses which one of them provides a better information gain and then it splits the dataset accordingly. As in the OTFI method, the decision node here remembers which split type it had assigned in order to decide how the testing data should be propagated during prediction.
   \section{Network dataset}
-    TODO: Network datasets
+    {\color{red}TODO}
     \subsection{Dataset description}
-      TODO: Dataset description
+      {\color{red}TODO}
     \subsection{Analysis with correlation}
-      TODO: Analysis withcorrelation
+      {\color{red}TODO}
     \subsection{Why most of the algorithms is not relevant}
-      TODO: Why most of the algorithms is not relevant (big data)
+      {\color{red}TODO}
   \newpage
   \section{Experiments}
-    TODO: Experiments
+    {\color{red}TODO}
     \subsection{Evaluation metrics}
-      TODO: Evaluation metrics
+      {\color{red}TODO}
   \newpage
   \section*{Conclusion}
   \addcontentsline{toc}{section}{Conclusion}
-    TODO: Conclusion
+    {\color{red}TODO}
   \newpage
-  \begin{thebibliography}{9}
-    \bibitem{brabec}
-      Jan Brabec,
-      {\it Decision Forests in the Task of Semi-Supervised Learning},
-      Czech Technical University in Prague. Computing and Information Centre, 
-      2017-01-29
-
-    \bibitem{breiman}
-      Leo Breiman,
-      {\it Manual--Setting Up, Using And Understanding Random Forests},
-      University of California, Berkeley. Department of Statistics,
-      Version 4.0,
-      Available at \url{www.stat.berkeley.edu/~breiman/} as of 2018-01-12.
-    
-    \bibitem{python}
-      Python Software Foundation,
-      {\it Python Language Reference},
-      Version 3.6,
-      Available at \url{www.python.org} as of 2018-01-12.
- 
-    \bibitem{pandas}
-      Wes McKinney,
-      {\it pandas: a python data analysis library},
-      2008,
-      Available at \url{www.pandas.pydata.org} as of 2018-01-12.
-
-    \bibitem{numpy}
-      Travis Oliphant,
-      {\it NumPy},
-      2005,
-      Available at \url{www.numpy.org} as of 2018-01-12.
-
-    \bibitem{scikit}
-      Pedregosa, F. and Varoquaux, G. and Gramfor, A. and Michel, V. and Thirion, B. and Grisel, O. and Blondel, M. and Prettenhofer, P. and Weiss, R. and Dubourg, V. and Vanderplas, J. and Passos, A. and Cournapeau, D. and Brucher, M. and Perrot, M. and Duchesnay, E.,
-      {\it Scikit-learn: Machine Learning in Python},
-      Journal of Machine Learning Research,
-      Volume 12,
-      2011,
-      Available at \url{www.scikit-learn.org} as of 2018-01-12.
-
-    \bibitem{bitbucket}
-      Atlassian Corporation Plc,
-      {\it Bitbucket},
-      Available at \url{www.bitbucket.org} as of 2018-01-12.
-       
-  \end{thebibliography}
-
 \end{document}
 
