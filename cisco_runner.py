@@ -14,6 +14,7 @@ from collections import defaultdict
 from joblib import Parallel
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class SerializableClassifier():
@@ -141,7 +142,7 @@ class CiscoRunner():
         t_path='classification_tool/datasets/cisco_datasets/data/test_t',
         classifier=RFC, n_estimators=100, max_features='sqrt',
         min_samples_split=2, criterion='entropy', n_jobs=-1,
-        random_state=0, nan_value=None, relaxed=False, agg_by=None, method=None
+        random_state=42, nan_value=None, relaxed=False, agg_by=None, method=None
     ):
 
         clsfr_output = os.path.join(output_dir, 'clsfr')
@@ -278,7 +279,22 @@ class CiscoRunner():
 
         return ser_classifier
 
-    def get_corellation_matrix(self, path, output_dir):
+    def get_correlation_matrix(self, path, output_dir):
+        def get_redundant_pairs(df):
+            '''Get diagonal and lower triangular pairs of correlation matrix'''
+            pairs_to_drop = set()
+            cols = df.columns
+            for i in range(0, df.shape[1]):
+                for j in range(0, i+1):
+                    pairs_to_drop.add((cols[i], cols[j]))
+            return pairs_to_drop
+
+        def get_top_correlations(df, n=5, ascending=False):
+            au_corr = df.corr().unstack()
+            labels_to_drop = get_redundant_pairs(df)
+            au_corr = au_corr.drop(labels=labels_to_drop).sort_values(ascending=ascending)
+            return au_corr[0:n]
+
         os.makedirs(output_dir)
         eval_tool = EvaluationTool()
         sampling_settings = {
@@ -298,7 +314,33 @@ class CiscoRunner():
         with open(norm_path, 'w') as f:
             f.write(str(norm))
 
+        top_20_path = os.path.join(output_dir, 'top_20')
+        top_20_correlated = get_top_correlations(corr_matrix, 20)
+        top_20_correlated.to_csv(top_20_path, sep='\t', encoding='utf-8')
+
+        s = corr_matrix.unstack()
+        so = s.sort_values(kind="quicksort")
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+        ax.matshow(corr_matrix)
+        fig.savefig(os.path.join(output_dir, 'heatmap'))
+
     def get_missingness_correlation_matrix(self, path, output_dir):
+        def get_redundant_pairs(df):
+            '''Get diagonal and lower triangular pairs of correlation matrix'''
+            pairs_to_drop = set()
+            cols = df.columns
+            for i in range(0, df.shape[1]):
+                for j in range(0, i+1):
+                    pairs_to_drop.add((cols[i], cols[j]))
+            return pairs_to_drop
+
+        def get_top_correlations(df, n=5, ascending=False):
+            au_corr = df.corr().unstack()
+            labels_to_drop = get_redundant_pairs(df)
+            au_corr = au_corr.drop(labels=labels_to_drop).sort_values(ascending=ascending)
+            return au_corr[0:n]
+
         os.makedirs(output_dir)
         eval_tool = EvaluationTool()
         sampling_settings = {
@@ -320,11 +362,23 @@ class CiscoRunner():
         with open(norm_path, 'w') as f:
             f.write(str(norm))
 
+        top_20_path = os.path.join(output_dir, 'top_20')
+        top_20_correlated = get_top_correlations(corr_matrix, 20)
+        top_20_correlated.to_csv(top_20_path, sep='\t', encoding='utf-8')
+
+        s = corr_matrix.unstack()
+        so = s.sort_values(kind="quicksort")
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+        ax.matshow(corr_matrix)
+        fig.savefig(os.path.join(output_dir, 'heatmap'))
+
 
 runner = CiscoRunner()
 
 out_dir = datetime.datetime.now().isoformat()
 out_corr = os.path.join('corr_outputs', out_dir)
+out_corr_missingness = os.path.join('corr_missingness_outputs', out_dir)
 out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
@@ -334,19 +388,19 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 
 # CORR
-# runner.get_correlation_matrix(
-#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
-# )
+runner.get_correlation_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+)
 # CORR MISINGNESS
-# runner.get_missingness_correlation_matrix(
-#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
-# )
+runner.get_missingness_correlation_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness
+)
 
 # OTFI
-runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
-    nan_value=None, n_estimators=20, method='otfi'
-)
+# runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
+#     nan_value=None, n_estimators=4, method='otfi'
+# )
 
 
 # MIA
@@ -356,11 +410,11 @@ runner.execute_run(
 # )
 
 # UNAG RFC
-clsfr = runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False,
-    dump=False, output_dir=out_dir_unagg, nan_value=-1000000,
-    n_estimators=20
-)
+# clsfr = runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False,
+#     dump=False, output_dir=out_dir_unagg, nan_value=-1000000,
+#     n_estimators=4
+# )
 
 # UNAG RFC_scikit
 # clsfr = runner.execute_run(
