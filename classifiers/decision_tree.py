@@ -39,15 +39,16 @@ class DecisionNode():
             else:
                 return self.right_child.evaluate(observation, method)
         elif method == 'otfi':
-            if np.isnan(observation[self.attr]):
+            value = observation[self.attr]
+            if np.isnan(value):
                 value = np.random.choice(
                     a=self.known_vals.index,
                     p=self.known_vals.values
                 )
-                if value <= self.value:
-                    return self.left_child.evaluate(observation, method)
-                else:
-                    return self.right_child.evaluate(observation, method)
+            if value <= self.value:
+                return self.left_child.evaluate(observation, method)
+            else:
+                return self.right_child.evaluate(observation, method)
         else:
             if observation[self.attr] <= self.value:
                 return self.left_child.evaluate(observation)
@@ -103,11 +104,10 @@ class DecisionTree():
         if sampled_columns is None:
             return self.__create_leaf_node(labels)
 
-        attr, value, known_vals, imputed = self.__find_best_split_parameters_otfi(
-            sampled_columns,
-            labels
-        )
-        threshold = self.__get_split_threshold_otfi(imputed, labels, value)
+        attr, value = self.__find_best_split_parameters(sampled_columns, labels)
+        if value is None and attr is None:
+            return self.__create_leaf_node(labels)
+        threshold, known_vals = self.__get_split_threshold_otfi(feature_matrix, labels, attr, value)
         labels_left = labels.loc[threshold]
         labels_right = labels.loc[~threshold]
 
@@ -186,32 +186,6 @@ class DecisionTree():
                     split = (column, value, min_entropy) if return_entropy else (column, value)
         return split
 
-    def __find_best_split_parameters_otfi(self, feature_matrix, labels):
-        min_entropy = float('inf')
-        split = None, None
-        for column in feature_matrix.columns:
-            counts_l, counts_r = self.__compute_class_counts(labels)
-            known_vals = feature_matrix[column].dropna().value_counts(normalize=True)
-            imputed = feature_matrix[column].apply(
-                lambda x: np.where(
-                    pd.isnull(x),
-                    self.random_state.choice(a=known_vals.index, p=known_vals.values, replace=True),
-                    x
-                )
-            )
-            coordinates = self.__compute_coordinates(imputed, labels)
-            for value, counts in sorted(coordinates.items()):
-                for label, count in counts.items():
-                    index = np.where(counts_l['class'] == label)
-                    counts_l[index] = (counts_l[index]['class'], counts_l[index]['count'] + count)
-                    counts_r[index] = (counts_r[index]['class'], counts_r[index]['count'] - count)
-
-                current_entropy = self.__compute_entropy(counts_l, counts_r)
-                if current_entropy < min_entropy:
-                    min_entropy = current_entropy
-                    split = column, value, known_vals, imputed
-        return split
-
     def __find_best_split_parameters_mia(self, feature_matrix, labels):
         split_a = self.__find_best_split_parameters(feature_matrix, labels, return_entropy=True)
         matrix_b = feature_matrix.replace(to_replace=-1000000, value=10000000)
@@ -239,9 +213,17 @@ class DecisionTree():
             threshold = matrix_c.loc[:, attr].values <= value
         return threshold
 
-    def __get_split_threshold_otfi(self, imputed, labels, value):
+    def __get_split_threshold_otfi(self, feature_matrix, labels, attr, value):
+        known_vals = feature_matrix[attr].dropna().value_counts(normalize=True)
+        imputed = feature_matrix[attr].apply(
+            lambda x: np.where(
+                pd.isnull(x),
+                self.random_state.choice(a=known_vals.index, p=known_vals.values, replace=True),
+                x
+            )
+        )
         threshold = imputed.loc[:].values <= value
-        return threshold
+        return threshold, known_vals
 
     def __get_split_threshold(self, feature_matrix, labels, attr, value):
         threshold = feature_matrix.loc[:, attr].values <= value
@@ -269,6 +251,9 @@ class DecisionTree():
     def __compute_coordinates(self, column, labels):
         classes = set(labels)
         coordinates = defaultdict(dict)
+
+        if self.method == 'otfi':
+            column = column.dropna()
 
         for v in column:
             for c in classes:
