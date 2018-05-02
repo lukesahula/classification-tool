@@ -6,6 +6,8 @@
 \usepackage[]{algorithm2e}
 \usepackage{url}
 \usepackage{xcolor}
+\usepackage{natbib}
+\usepackage{url}
 
 \urlstyle{same}
 
@@ -50,23 +52,24 @@
     {\color{red}TODO}
   \newpage
   \section{Handling missing values}
-    In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observation. Missing data in a dataset make it difficult for machine learning algorithms to properly learn from it. Depending on their amount and type they can hinder the classifiers performance and even, in some cases, render their output completely worthless.
+    In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand.\cite{otfi}
     \\~\\
-    There are various ways of handling these missing values, some as simple as dropping the the compromised observations altogether, leaving only those that are fully present. This however, cannot be done when there are missing data somewhere in most of the observations. Other simple methods include replacing missing data with the mean or median of all the non-missing data of the feature in question, or replacing the missing data with a constant outside of the interval of that feature's value. The process of replacing the missing data is called {\it imputation}.
+    There are various ways of handling missing data, some as simple as dropping the samples containing any missing values altogether, leaving only those samples with all data present.\cite{lwd} This however, cannot be done when there are missing data somewhere in most of the observations. Another simple method would be replacing missing data with the mean or median of all the non-missing values of the feature in question. The process of replacing the missing data is called {\it imputation}.
     \\~\\
-    More sophisticated methods of imputation also exist, a few of which are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
+    More sophisticated methods of imputation also exist and they are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others.\cite{otfi} Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
     \subsection{Related work}
-      {\color{red}TODO}
+      Various works comparing different imputation methods were published in the last years. Perhaps the most recent is {\it Random Forest Missing Data Algorithms} by F. Tang and H. Ishwaran.\cite{otfi}
     \subsection{Missing data mechanisms}
-      Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms. If the missing data are a random subset of all observations, they will have a similar distribution. There is no relationship between whether a value is missing and any other values in the data set, missing or observed. These values are {\it missing completely at random} (MCAR). When data are MCAR, an analysis of it is unbiased. However, data that are truly MCAR are not encountered often.
-      \\~\\
-      When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR). There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
-      \\~\\
-      The last missing data mechanism is {\it missing not at random} (MNAR). It means that there is a relationship between value of the variable that is missing and the reason why it is missing in the first place. For example a male suffering from a strong depression can decide not to fill a depression survey because of said depression.
+      Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms.\cite{lwd} It is important to understand these mechanisms in order to make an educated assumption about the dataset in question. If an assumption is made that the values are missing completely at random while they are missing systematically, an analysis based on this assumption may be biased.
+      \begin{itemize}
+      \item If the samples with missing data are a random subset of all observed samples, they have a similar distribution. There is no relationship between whether a value is missing and any other value in the data set, be it missing or observed. These values are {\it missing completely at random} (MCAR).\cite{lwd} When a dataset has missing values that are MCAR, it can still be analysed with unbiased results, provided that there are enough observed samples. However, data that are truly MCAR are not encountered often.
+      \item When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR).\cite{lwd} There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
+      \item The last missing data mechanism is {\it missing not at random} (MNAR). It means that there is a relationship between value of the variable that is missing and the reason why it is missing in the first place. For example a male suffering from a strong depression can decide not to fill a depression survey because of said depression.
+      \end{itemize}
     \subsection{Selected imputation algorithms}
       {\color{red}TODO}
       \subsubsection{On-the-fly-imputation}
-        {\it On-the-fly-imputation} (OTFI) or {\it Adaptive tree imputation} is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
+        {\it Adaptive tree imputation}\cite{rsf} or {\it On-the-fly-imputation}\cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
         \begin{enumerate}
         \item First, the best split is calculated as usual, using only non-missing data.
         \item After finding the best split, random values from the non-missing in-bag data within the current node are used to impute the missing values.
@@ -74,7 +77,7 @@
         \end{enumerate}
         The values the algorithm uses to impute the missing data are stored within the decision node while growing the tree along with the respective frequencies in which they occur within the node's dataset. These are then used again to impute the missing values in the testing dataset at the time of prediction to decide whether the observation belongs to the left or to the right child. After being sent to the child node, the imputed data is reset to missing again and the process repeats.
       \subsubsection{Missingness incorporated in attributes}
-        {\it Missingness incorporated in attributes} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
+        {\it Missingness incorporated in attributes}\cite{mia} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
         \begin{itemize}
         \item Split A: \{ $X \leq s$ or $X =$ missing \} versus \{ $X > s$ \}.
         \item Split B: \{ $X \leq s$ \} versus \{ $X > s$ or $X =$ missing \}.
@@ -99,5 +102,7 @@
   \addcontentsline{toc}{section}{Conclusion}
     {\color{red}TODO}
   \newpage
+  \bibliographystyle{plain}
+  \bibliography{thesis}
 \end{document}
 
