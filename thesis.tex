@@ -6,10 +6,11 @@
 \usepackage[]{algorithm2e}
 \usepackage{url}
 \usepackage{xcolor}
-\usepackage{natbib}
+\usepackage[round, sort]{natbib}
 \usepackage{url}
 
 \urlstyle{same}
+\bibliographystyle{apalike}
 
 \addto\captionsczech{
   \renewcommand{\contentsname}
@@ -48,28 +49,47 @@
     \subsection{Intro to classification}
       {\color{red}TODO}
   \newpage
-  \section{Random forests}
-    {\color{red}TODO}
+  \section{Random forest classifier}
+    {\it Random forests} or {\it random forest classifiers} are the central focus of this thesis because they are most suited for the malware classification problem. They can handle {\it multiclass classification}, evaluate data relatively fast and they are not heavily affected by {\it imbalanced datasets}. \citep{brabec} They run efficiently on large amounts of data and give estimated of what feature variables are important for classification. \citep{breiman}
+    \\~\\
+    This chapter explains in detail how random forests work and how they can be implemented. The first bit that needs to be described is the {\it decision tree}.
+    \subsection{Decision tree classifier}
+      {\it Decision tree classifier} is a classification algorithm probably named because of its structure resembling a decision tree known from graph theory.
+    \subsection{Ensemble learning}
   \newpage
   \section{Handling missing values}
-    In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand.\cite{otfi}
+    In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand. \citep{otfi}
     \\~\\
-    There are various ways of handling missing data, some as simple as dropping the samples containing any missing values altogether, leaving only those samples with all data present.\cite{lwd} This however, cannot be done when there are missing data somewhere in most of the observations. Another simple method would be replacing missing data with the mean or median of all the non-missing values of the feature in question. The process of replacing the missing data is called {\it imputation}.
+    There are various ways of handling missing data, some as simple as dropping the samples containing any missing values altogether, leaving only those samples with all data present. \citep{lwd} This however, cannot be done when there are missing data somewhere in most of the observations. Another simple method, the strawman imputation \citep{otfi} would be replacing missing data with the mean or median of all the non-missing values of the feature in question. The process of replacing the missing data is called {\it imputation}.
     \\~\\
-    More sophisticated methods of imputation also exist and they are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others.\cite{otfi} Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
+    More sophisticated methods of imputation also exist and they are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. \citep{otfi} Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
     \subsection{Related work}
-      Various works comparing different imputation methods were published in the last years. Perhaps the most recent is {\it Random Forest Missing Data Algorithms} by F. Tang and H. Ishwaran.\cite{otfi}
+      Various works comparing different imputation methods were published in the last years. Three imputation methods meant for decision trees are well explained in a paper called {\it Good methods for coping with missing data in decision trees}. \citep{mia}
+      \\~\\
+      Another work worth mentioning that focuses on random forests and missing data imputation is {\it Random survival forests}. \citep{rsf}
+      \\~\\
+      Perhaps the most recent work on this topic is {\it Random Forest Missing Data Algorithms} \citep{otfi} which is a continuation of the previous one by one of the same authors. In this paper, five ways of imputation using random forests are discussed in detail and tested on multiple datasets with different attributes. A comparison of their imputation accuracy is made as well.
+    \\~\\
     \subsection{Missing data mechanisms}
-      Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms.\cite{lwd} It is important to understand these mechanisms in order to make an educated assumption about the dataset in question. If an assumption is made that the values are missing completely at random while they are missing systematically, an analysis based on this assumption may be biased.
+      Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms. \citep{lwd} It is important to understand these mechanisms in order to make an educated assumption about the dataset in question. If an assumption is made that the values are missing completely at random while they are missing systematically, an analysis based on this assumption may be biased.
       \begin{itemize}
-      \item If the samples with missing data are a random subset of all observed samples, they have a similar distribution. There is no relationship between whether a value is missing and any other value in the data set, be it missing or observed. These values are {\it missing completely at random} (MCAR).\cite{lwd} When a dataset has missing values that are MCAR, it can still be analysed with unbiased results, provided that there are enough observed samples. However, data that are truly MCAR are not encountered often.
-      \item When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR).\cite{lwd} There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
+      \item If the samples with missing data are a random subset of all observed samples, they have a similar distribution. There is no relationship between whether a value is missing and any other value in the data set, be it missing or observed. These values are {\it missing completely at random} (MCAR). \citep{lwd} When a dataset has missing values that are MCAR, it can still be analysed with unbiased results, provided that there are enough observed samples. However, data that are truly MCAR are not encountered often.
+      \item When the missing data is somehow dependent or related to other non-missing values in the observation, the data is {\it missing at random} (MAR). \citep{lwd} There is no definitive way of distinguishing between MCAR and MAR data. The assumption of it being one or the other is only as good as the knowledge of the data and the field of the one proposing the assumption. A good example of MAR data would be that males are less likely to fill a depression survey, although it does not have any connection to their level of depression.
       \item The last missing data mechanism is {\it missing not at random} (MNAR). It means that there is a relationship between value of the variable that is missing and the reason why it is missing in the first place. For example a male suffering from a strong depression can decide not to fill a depression survey because of said depression.
       \end{itemize}
     \subsection{Selected imputation algorithms}
-      {\color{red}TODO}
+      This section contains a list of imputation algorithms that were taken in consideration when deciding which ones to implement.
+      \begin{itemize}
+      \item Strawman imputation
+      \item Proximity imputation
+      \item On-the-fly-imputation
+      \item Missingness incorporated in attributes
+      \item Unsupervised imputation
+      \item missForest
+      \item Surrogate splits
+      \end{itemize}
       \subsubsection{On-the-fly-imputation}
-        {\it Adaptive tree imputation}\cite{rsf} or {\it On-the-fly-imputation}\cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
+        {\it Adaptive tree imputation} \citep{rsf} or {\it On-the-fly-imputation} \citep{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
         \begin{enumerate}
         \item First, the best split is calculated as usual, using only non-missing data.
         \item After finding the best split, random values from the non-missing in-bag data within the current node are used to impute the missing values.
@@ -77,13 +97,19 @@
         \end{enumerate}
         The values the algorithm uses to impute the missing data are stored within the decision node while growing the tree along with the respective frequencies in which they occur within the node's dataset. These are then used again to impute the missing values in the testing dataset at the time of prediction to decide whether the observation belongs to the left or to the right child. After being sent to the child node, the imputed data is reset to missing again and the process repeats.
       \subsubsection{Missingness incorporated in attributes}
-        {\it Missingness incorporated in attributes}\cite{mia} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
+        {\it Missingness incorporated in attributes} \citep{mia} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
         \begin{itemize}
         \item Split A: \{ $X \leq s$ or $X =$ missing \} versus \{ $X > s$ \}.
         \item Split B: \{ $X \leq s$ \} versus \{ $X > s$ or $X =$ missing \}.
         \item Split C: \{ $X =$ missing \} versus \{ $X =$ not missing \}.
         \end{itemize}
         After finding the best split in each approach separately, the algorithm then chooses which one of them provides a better information gain and then it splits the dataset accordingly. As in the OTFI method, the decision node here remembers which split type it had assigned in order to decide how the testing data should be propagated during prediction.
+      \subsubsection{Strawman imputation}
+        {\it Strawman imputation} \citep{otfi} is a simple method for handling missing values. It works very fast compared to other methods and its implementation is very simple. The missing values are imputed before the forest is grown by calculating the median of non-missing values in the feature column.
+        \\~\\
+        Considering the implementation is a matter of seconds, an altered version of strawman imputation was also used, one that uses mean instead of median.
+        \\~\\
+        Further alteration inspired by the on-the-fly-imputation method could be done to strawman imputation. That is, the mean or median could be calculated later during the process of growing a decision tree, at the moment of splitting. But instead of choosing randomly from the in-bag frequencies of non-missing values, mean or median of the in-bag data would be stored at the node and used later for predictions.
   \section{Network dataset}
     {\color{red}TODO}
     \subsection{Dataset description}
@@ -102,7 +128,6 @@
   \addcontentsline{toc}{section}{Conclusion}
     {\color{red}TODO}
   \newpage
-  \bibliographystyle{plain}
   \bibliography{thesis}
 \end{document}
 
