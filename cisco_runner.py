@@ -239,7 +239,7 @@ class CiscoRunner():
             joblib.dump(ser_classifier, clsfr_output, compress=3)
 
         self.__write(eval_output, 'Predicting')
-        with Parallel(n_jobs=n_jobs, verbose=100) as parallel:
+        with Parallel(n_jobs=n_jobs) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
                 clas_tool.save_predictions(
