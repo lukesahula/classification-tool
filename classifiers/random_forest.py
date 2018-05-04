@@ -32,7 +32,7 @@ class RandomForest():
         self.labels = labels
         counts = list(range(100))
         random_seeds = self.random_state.randint(0, 10000, self.n_estimators)
-        self.estimators_ = Parallel(n_jobs=self.n_jobs)(
+        self.estimators_ = Parallel(n_jobs=self.n_jobs, verbose=20)(
              delayed(self.init_tree)(seed, count) for seed, count in zip(random_seeds, counts)
         )
         self.trained = True

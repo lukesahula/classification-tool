@@ -239,7 +239,7 @@ class CiscoRunner():
             joblib.dump(ser_classifier, clsfr_output, compress=3)
 
         self.__write(eval_output, 'Predicting')
-        with Parallel(n_jobs=n_jobs) as parallel:
+        with Parallel(n_jobs=n_jobs, verbose=100) as parallel:
             for t_data in loading_tool.load_testing_data(t_path):
                 t_data = loading_tool.quantize_data(t_data)
                 clas_tool.save_predictions(
@@ -392,15 +392,15 @@ runner.get_correlation_matrix(
    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
 )
 # CORR MISINGNESS
-runner.get_missingness_correlation_matrix(
-   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness
-)
+# runner.get_missingness_correlation_matrix(
+#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness
+# )
 
 # OTFI
-# runner.execute_run(
-#     classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
-#     nan_value=None, n_estimators=4, method='otfi'
-# )
+runner.execute_run(
+    classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
+    nan_value=None, n_estimators=10, method='otfi'
+)
 
 
 # MIA
