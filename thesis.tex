@@ -41,13 +41,16 @@
 
   \section*{Introduction}
   \addcontentsline{toc}{section}{Introduction}
+    Machine learning and cybersecurity are two highly significant buzzwords of today's tech industry. With machine learning being considered as the modern cure-all pill it is no wonder that it has found its uses even in the field of cybersecurity. This thesis touches both of these subjects in the context of automated {\it malware classification}.
+    \\~\\
+    In order for any classification algorithm to work, it has to be trained on a sufficient dataset. In this case the datasets are encrypted network proxy logs and as such they contain a not negligible amount of {\it missing data}. Most classification algorithms are not designed with an implicit way of dealing with missing values and thus they have to be handled before the classification process. Handling missing data is the focus of this thesis.
+    \\~\\
+    Over the past two decades, a significant number of methods for dealing with missing data has been introduced, but none has yet shown any game-breaking results. Plenty of methods are somewhat situational and work only with specific cases of missing data. Thus it is not clear which method to choose at which time. This thesis studies these methods along with analysing the network proxy log datasets in order to find out the most efficient one.
+    \\~\\
+    The thesis consists of several sections. At the beginning, there is a brief introduction to machine learning and classification, followed by an explanation of the classification algorithm often connected to the missing data problem - the {\it random forest classifier}. The next chapter concerns itself with missing data mechanisms and gives a summary of known algorithms for missing data {\it imputation}. The chapter after that provides an analysis of the network datasets. The last section is dedicated to experiments and results of this thesis.
+  \newpage
+  \section{Classification}
     {\color{red}TODO}
-    \subsection{Why}
-      {\color{red}TODO}
-    \subsection{Summary}
-      {\color{red}TODO}
-    \subsection{Intro to classification}
-      {\color{red}TODO}
   \newpage
   \section{Random forest classifier}
     {\it Random forests} or {\it random forest classifiers} are the central focus of this thesis because they are most suited for the malware classification problem. They can handle {\it multiclass classification}, evaluate data relatively fast and they are not heavily affected by {\it imbalanced datasets}. \citep{brabec} They run efficiently on large amounts of data and give estimated of what feature variables are important for classification. \citep{breiman}
