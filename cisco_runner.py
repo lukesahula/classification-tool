@@ -373,12 +373,60 @@ class CiscoRunner():
         ax.matshow(corr_matrix)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
 
+    def get_cond_prob_matrix(self, path, output_dir):
+        def get_conditional_probabilities(column, df):
+            result = np.ndarray((51,))
+            for col in df.columns:
+                if column.nunique() == 1:
+                    if column.unique() == 0:
+                        result.fill(-1)
+                    else:
+                        result.fill(2)
+                    break
+                elif col == column.name:
+                    result[col] = 0
+                else:
+                    probs = df.groupby(col).size().div(len(df))
+                    cond_probs = df.groupby(
+                        [column.name, col]).size().div(len(df)).div(probs, axis=0, level=col)[1]
+                    if 0 in cond_probs:
+                        result[col] = cond_probs[0]
+                    else:
+                        result[col] = 0
+            return pd.Series(result)
+
+        os.makedirs(output_dir)
+        eval_tool = EvaluationTool()
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 10000,
+            'bin_samples': 1000,
+            'seed': 0,
+            'nan_value': None,
+        }
+        loading_tool = LoadingTool(sampling_settings)
+        data = loading_tool.load_training_data(path)[0]
+        data[~pd.isnull(data)] = 1
+        data[pd.isnull(data)] = 0
+        matrix = data.apply(get_conditional_probabilities, axis=0, df=data)
+        matrix = matrix.transpose()
+        cond_path = os.path.join(output_dir, 'cond_missingness')
+        matrix.to_csv(cond_path, sep='\t', encoding='utf-8')
+
+        s = matrix.unstack()
+        so = s.sort_values(kind="quicksort")
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+        ax.matshow(matrix)
+        fig.savefig(os.path.join(output_dir, 'heatmap'))
+
 
 runner = CiscoRunner()
 
 out_dir = datetime.datetime.now().isoformat()
 out_corr = os.path.join('corr_outputs', out_dir)
 out_corr_missingness = os.path.join('corr_missingness_outputs', out_dir)
+out_cond_prob = os.path.join('cond_prob_outputs', out_dir)
 out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
@@ -388,19 +436,25 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 
 
 # CORR
-runner.get_correlation_matrix(
-   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+# runner.get_correlation_matrix(
+#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+# )
+
+# COND PROB
+runner.get_cond_prob_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_cond_prob
 )
+
 # CORR MISINGNESS
 # runner.get_missingness_correlation_matrix(
 #    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness
 # )
 
 # OTFI
-runner.execute_run(
-    classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
-    nan_value=None, n_estimators=10, method='otfi'
-)
+# runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
+#     nan_value=None, n_estimators=10, method='otfi'
+# )
 
 
 # MIA
