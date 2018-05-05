@@ -105,7 +105,7 @@ class DecisionTree():
             return self.__create_leaf_node(labels)
 
         attr, value = self.__find_best_split_parameters(sampled_columns, labels)
-        if value is None and attr is None:
+        if attr is None and value is None:
             return self.__create_leaf_node(labels)
         threshold, known_vals = self.__get_split_threshold_otfi(feature_matrix, labels, attr, value)
         labels_left = labels.loc[threshold]
