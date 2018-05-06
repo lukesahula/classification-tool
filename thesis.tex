@@ -18,7 +18,7 @@
 }
 
 \title{Handling Missing Values in Decision Forests in the Encrypted Network Traffic}
-\date{2018-04-24}
+\date{2018-05-06}
 \author{Lukáš Sahula}
 
 \begin{document}
@@ -41,23 +41,39 @@
 
   \section*{Introduction}
   \addcontentsline{toc}{section}{Introduction}
-    Machine learning and cybersecurity are two highly significant buzzwords of today's tech industry. With machine learning being considered as the modern cure-all pill it is no wonder that it has found its uses even in the field of cybersecurity. This thesis touches both of these subjects in the context of automated {\it malware classification}.
+    Machine learning and cybersecurity are two highly significant buzzwords of today's tech industry. With machine learning being considered as the modern cure-all pill it is no wonder that it has found its uses even in the field of cybersecurity. This thesis touches both of these subjects in the context of automated {\it malware classification}, with the main focus being dealing with {\it missing values} using {\it random forests}.
     \\~\\
-    In order for any classification algorithm to work, it has to be trained on a sufficient dataset. In this case the datasets are encrypted network proxy logs and as such they contain a not negligible amount of {\it missing data}. Most classification algorithms are not designed with an implicit way of dealing with missing values and thus they have to be handled before the classification process. Handling missing data is the focus of this thesis.
+    In order for any classification algorithm to work, it has to be trained on a sufficient dataset. In this case the datasets are encrypted network proxy logs and as such they contain a moderate amount of {\it missing data}. Most classification algorithms are not designed with an implicit way of dealing with missing values and thus they have to be handled before the classification process.
     \\~\\
     Over the past two decades, a significant number of methods for dealing with missing data has been introduced, but none has yet shown any game-breaking results. Plenty of methods are somewhat situational and work only with specific cases of missing data. Thus it is not clear which method to choose at which time. This thesis studies these methods along with analysing the network proxy log datasets in order to find out the most efficient one.
     \\~\\
-    The thesis consists of several sections. At the beginning, there is a brief introduction to machine learning and classification, followed by an explanation of the classification algorithm often connected to the missing data problem - the {\it random forest classifier}. The next chapter concerns itself with missing data mechanisms and gives a summary of known algorithms for missing data {\it imputation}. The chapter after that provides an analysis of the network datasets. The last section is dedicated to experiments and results of this thesis.
+    The thesis consists of several sections. At the beginning, there is a brief introduction to machine learning and malware classification, followed by an explanation of the classification algorithm often connected to the missing data problem - the {\it random forest classifier}. The next chapter concerns itself with missing data mechanisms and gives a summary of known algorithms for missing data {\it imputation}. The chapter after that provides an analysis of the network datasets. The last section is dedicated to the conducted experiments and results of this thesis.
   \newpage
-  \section{Classification}
-    {\color{red}TODO}
+  \section{Malware classification}
+      This chapter serves both as a general introduction to the term {\it malware} and as an introduction to {\it machine learning}, specifically to one of its subsets, {\it classification}. After explaining both terms, there is a short section dedicated to connecting the two terms.
+    \subsection{Malware}
+      {\it Malware} is an abbreviated form of the term malicious software. It is often used when referring to viruses, spyware, and other software designed to cause harm to a computer, server, network or a mobile device. \citep{malware}
+      \\~\\
+      Viruses are computer programs with the goal of spreading from one file to another across one or multiple devices through a network undetected and without consent of the user. A common misinterpretation of viruses is that they are programs designed to delete or move data, however, this damage is often a side effect. The definition of a virus is that it spreads itself. \citep{malware}
+      \\~\\
+      Spyware is a form of computer program that runs on the infected computer and tracks its user's habits to form a pattern that can be then used for advertisements or sent to the spyware's creator. \citep{malware}
+      \\~\\
+      When malware spreads through the network, or when it communicates with their command and control computers, it leaves a detectable trace in the network traffic. What more, these traces can often be found much sooner (ranging from weeks to months) than security administrators are able to capture a sample of the invading malware. \citep{network} According to the five years long study by Georgia Institute of Technology, the endpoints with which specific malware communicates do not change in long time periods (years). This means that once a node in the network suspicious of being infected is found, it is possible to look for traffic going in and out, which in turn can help with identifying other infected devices. \citep{network}
+      \newpage
+    \subsection{Classification in machine learning}
+      {\color{red}TODO}
+      \newpage
+    \subsection{Classification and malware}
+      {\color{red}TODO}
   \newpage
   \section{Random forest classifier}
-    {\it Random forests} or {\it random forest classifiers} are the central focus of this thesis because they are most suited for the malware classification problem. They can handle {\it multiclass classification}, evaluate data relatively fast and they are not heavily affected by {\it imbalanced datasets}. \citep{brabec} They run efficiently on large amounts of data and give estimated of what feature variables are important for classification. \citep{breiman}
+    {\it Random forests} or {\it random forest classifiers} are the central focus of this thesis because they are most suited for the malware classification problem. They can handle {\it multiclass classification}, evaluate data relatively fast and they are not heavily affected by {\it imbalanced datasets}. \citep{brabec} They run efficiently on large amounts of data and give estimates of what feature variables are important for classification. \citep{breiman}
     \\~\\
-    This chapter explains in detail how random forests work and how they can be implemented. The first bit that needs to be described is the {\it decision tree}.
+    This chapter explains in detail how random forests work and how they can be implemented. As the name implies, random forest is an ensemble of learning algorithms called {\it decision trees}. In order to understand random forests, decision trees are the first thing that needs to be explained.
     \subsection{Decision tree classifier}
       {\it Decision tree classifier} is a classification algorithm probably named because of its structure resembling a decision tree known from graph theory.
+      \\~\\
+      {\color{red}TODO}
     \subsection{Ensemble learning}
   \newpage
   \section{Handling missing values}
