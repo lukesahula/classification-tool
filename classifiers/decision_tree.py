@@ -14,12 +14,12 @@ class LeafNode():
 
 
 class DecisionNode():
-    def __init__(self, left_child, right_child, attr, value, known_vals=None, split_type=None):
+    def __init__(self, left_child, right_child, attr, value, probs=None, split_type=None):
         self.left_child = left_child
         self.right_child = right_child
         self.attr = attr
         self.value = value
-        self.known_vals = known_vals
+        self.probs = probs
         self.split_type = split_type
 
     def evaluate(self, observation, method=None):
@@ -42,8 +42,8 @@ class DecisionNode():
             value = observation[self.attr]
             if np.isnan(value):
                 value = np.random.choice(
-                    a=self.known_vals.index,
-                    p=self.known_vals.values
+                    a=[self.value, self.value + 1],
+                    p=self.probs
                 )
             if value <= self.value:
                 return self.left_child.evaluate(observation, method)
@@ -107,7 +107,7 @@ class DecisionTree():
         attr, value = self.__find_best_split_parameters(sampled_columns, labels)
         if attr is None and value is None:
             return self.__create_leaf_node(labels)
-        threshold, known_vals = self.__get_split_threshold_otfi(feature_matrix, labels, attr, value)
+        threshold, probs = self.__get_split_threshold_otfi(feature_matrix, labels, attr, value)
         labels_left = labels.loc[threshold]
         labels_right = labels.loc[~threshold]
 
@@ -117,7 +117,7 @@ class DecisionTree():
         left_child = self.__build_tree_otfi(feature_matrix.loc[threshold, :], labels_left)
         right_child = self.__build_tree_otfi(feature_matrix.loc[~threshold, :], labels_right)
 
-        return DecisionNode(left_child, right_child, attr, value, known_vals)
+        return DecisionNode(left_child, right_child, attr, value, probs)
 
     def __build_tree(self, feature_matrix, labels):
         if self.__should_create_leaf_node(feature_matrix, labels):
@@ -215,15 +215,18 @@ class DecisionTree():
 
     def __get_split_threshold_otfi(self, feature_matrix, labels, attr, value):
         known_vals = feature_matrix[attr].dropna().value_counts(normalize=True)
+        p_left = sum(known_vals[known_vals.index <= value].values)
+        p_right = sum(known_vals[known_vals.index > value].values)
+        probs = (p_left, p_right)
         imputed = feature_matrix[attr].apply(
             lambda x: np.where(
                 pd.isnull(x),
-                self.random_state.choice(a=known_vals.index, p=known_vals.values, replace=True),
+                self.random_state.choice(a=[value, value + 1], p=probs, replace=True),
                 x
             )
         )
         threshold = imputed.loc[:].values <= value
-        return threshold, known_vals
+        return threshold, probs
 
     def __get_split_threshold(self, feature_matrix, labels, attr, value):
         threshold = feature_matrix.loc[:, attr].values <= value
