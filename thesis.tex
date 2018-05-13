@@ -13,10 +13,9 @@
 \bibliographystyle{apalike}
 
 \addto\captionsczech{
-  \renewcommand{\contentsname}
-    {Table of contents}
+  \renewcommand{\contentsname}{Table of contents}%
+  \renewcommand{\figurename}{Figure}%
 }
-
 \title{Handling Missing Values in Decision Forests in the Encrypted Network Traffic}
 \date{2018-05-06}
 \author{Lukáš Sahula}
@@ -49,7 +48,7 @@
     \\~\\
     The thesis consists of several sections. At the beginning, there is a brief introduction to malware classification, followed by an explanation of the classification algorithm often connected to the missing data problem - the {\it random forest classifier}. The next chapter concerns itself with missing data mechanisms and gives a summary of known algorithms for missing data {\it imputation}. The chapter after that provides an analysis of the network datasets. The last section is dedicated to the conducted experiments and results of this thesis.
   \newpage
-  \section{Malware classification}
+  \section{Malware and classification}
       This chapter serves both as a general introduction to the term {\it malware} and as an introduction to {\it machine learning}, specifically to one of its subsets, {\it classification}. After explaining both terms, there is a short section dedicated to connecting the two terms.
     \subsection{Malware}
       {\it Malware} is an abbreviated form of the term malicious software. It is often used when referring to viruses, spyware, and other software designed to cause harm to a computer, server, network or a mobile device. \citep{malware}
@@ -61,28 +60,51 @@
       When malware spreads through the network, or when it communicates with their command and control computers, it leaves a detectable trace in the network traffic. What more, these traces can often be found much sooner (ranging from weeks to months) than security administrators are able to capture a sample of the invading malware. \citep{network} According to the five years long study by Georgia Institute of Technology, the endpoints with which specific malware communicates do not change in long time periods (years). This means that once a node in the network suspicious of being infected is found, it is possible to look for traffic going in and out, which in turn can help with identifying other infected devices. \citep{network}
       \newpage
     \subsection{Classification}
-      In statistics and machine learning, classification is the process of assigning a specific category, or a {\it class}, to which a new object or an observation belongs. This assignment, or {\it prediction}, is done after processing a set of previously categorized data, often called the {\it training dataset}. This is done by a classification algorithm, known as a {\it classifier}. This classifier learns from a set of data, for example emails labeled as spam or non-spam, in order to predict the category of new incoming emails. That way an email client can move unwanted spam to the spam folder and keep the relevant mail in the inbox. Another is predicting whether a patient's tumor is benign or malign, based on the hospital data from other patients. Or, as will be the case in this thesis, whether an instance of network traffic is the result of (and which) malware, based on data gained from network proxy logs.
+      In statistics and machine learning, classification is the process of assigning a specific category, or a {\it class}, to which a new object or an observation belongs. This assignment, or {\it prediction}, is done after processing a set of previously categorized data, often called the {\it training dataset}. This is done by a classification algorithm, known as a {\it classifier}. This classifier learns from a set of data, for example emails labeled as spam or non-spam, in order to predict the category of new incoming emails. That way an email client can move unwanted spam to the spam folder and keep the relevant mail in the inbox. Another is predicting whether a patient's tumor is benign or malign, based on the hospital records with data from other patients. Or, as will be the case in this thesis, whether an instance of network traffic is the result of (and which) malware, based on data gained from network proxy logs.
       \\~\\
-      Within the terminology of machine learning, classification is in the category of {\it supervised learning}. \citep{mlintro} Supervised learning means that the classifier learns from the training dataset with labeled data. This dataset is often in the form of a matrix {\bf X}. The rows in this matrix are called {\it feature vectors} {\bf x}. They contain the observed attributes, called {\it features}, of each individual object. These features are quantifiable and can be categorical (smoker or non-smoker), integer-valued (age of the patient in years), or real-valued (patient's body temperature). Since the learning is supervised, the dataset also includes a column with the class labels {\bf c} of each observed object.
+      Within the terminology of machine learning, classification is in the category of {\it supervised learning}. \citep{mlintro} Supervised learning means that the classifier learns from the training dataset with labeled data. This dataset is often in the form of a matrix. The rows in this matrix are called {\it feature vectors}. They contain the observed attributes, called {\it features}, of each individual object. These features are quantifiable and can be categorical (smoker or non-smoker), integer-valued (age of the patient in years), or real-valued (patient's body temperature). Since the learning is supervised, the dataset also includes a column with the class labels of each observed object.
       \\~\\
       When the classifier is trained, it can predict the classes of new objects based on their features. The mathematical function implemented by the classifier maps input feature vectors {\bf x} of a matrix {\bf X} to a class {\bf c}. The performance of the classifier is usually tested on another set of data called the {\it testing dataset}.
       \\~\\
       Classification does not always have to be binary, meaning the data can be of more than two categories. This is called {\it multiclass classification}. Returning to the example of e-mail classification, some classifiers could be trained to predict whether an incoming e-mail belongs to {\it work}, {\it school}, or {\it personal} categories.
       \\~\\
       There are also other forms of classification, like the {\it multilabel classification}. In multilabel classification, multiple classes can be assigned to an observation. This makes sense in cases where the categories are not mutually exclusive. However, this thesis will be focusing only on the problem of multiclass classification.
-      \newpage
-    \subsection{Classification of malware}
+    \subsection{Malware classification}
       {\color{red}TODO}
   \newpage
   \section{Random forest classifier}
     {\it Random forests} or {\it random forest classifiers} are the central focus of this thesis because they are most suited for the malware classification problem. They can handle {\it multiclass classification}, evaluate data relatively fast and they are not heavily affected by {\it imbalanced datasets}. \citep{brabec} They run efficiently on large amounts of data and give estimates of what feature variables are important for classification. \citep{breiman}
     \\~\\
     This chapter explains in detail how random forests work and how they can be implemented. As the name implies, random forest is an ensemble of learning algorithms called {\it decision trees}. In order to understand random forests, decision trees are the first thing that needs to be explained.
-    \subsection{Decision tree classifier}
-      {\it Decision tree classifier} is a classification algorithm probably named because of its structure resembling a decision tree known from graph theory.
-      \\~\\
-      {\color{red}TODO}
-    \subsection{Ensemble learning}
+    \subsection{Decision trees}
+      \subsubsection{Overview}
+        {\it Decision tree classifier} is a classification algorithm probably named because of its structure resembling a decision tree known from graph theory. Another variation of a decision tree is the regression tree, which only differs in that the predicted outcome is not a class but a real value. One of the most significant publications about decision trees is {\it Classification and Regression Trees} by L. Breiman. It introduces the {\it CART algorithm} for growing both classification and regression trees. \citep{cart} Other algorithms for growing decision trees also exist, for example the {\it ID3 algorithm} or the {\it C4.5 algorithm}.
+        \\~\\
+        A grown tree consists of a root node, decision nodes and terminal nodes, also called {\it leaves}. All leaves are associated with the resulting prediction class. Each decision node contains information about its split, which consists of an attribute, or a {\it feature}, and its value. When an observed object is analysed to predict its class, the value of the feature in question is compared with the value stored at the decision node. Depending on the result of this comparison, the object is then sent to the left child or the right child of the node. When the object reaches a leaf node, it is given the class that is associated with it. This explanation is visualised in Figure \ref{figure:decision_tree}.
+        \begin{figure}
+          \centering
+          \includegraphics{thesis_res/decision_tree.png}
+          \caption{Picture of a decision tree with the training data used for its growth. \citep{digstaining}}
+          \label{figure:decision_tree}
+        \end{figure}
+      \subsubsection{Strengths}
+        In comparison with other classification algorithms, decision trees have various strengths and advantages, like:
+        \begin{itemize}
+        \item They are easily interpretable by people after a brief explanation. The graphical representation of the tree is also very easy to follow and the decision making process is similar to how people generally make decisions in real life. \citep{isl}
+        \item They require little data preparation, for example data normalisation is not needed like in other techniques. \citep{isl}
+        \item They work with both numerical and categorical data. \citep{isl}
+        \item They perform well with large datasets within reasonable time. \citep{breiman}
+        \end{itemize}
+      \subsubsection{Weaknesses}
+        However, decision trees are not perfect as classifiers go because they also have some weaknesses, for example:
+        \begin{itemize}
+        \item They are not as accurate as other approaches. \citep{isl}
+        \item They are not very robust, a small change in training data can lead to a big change in the decision tree, leading to different results. \citep{isl}
+        \item They are prone to {\it overfitting}. \citep{isl}
+        \end{itemize}
+        All these disadvantages are going to be addresed again in the random forests part of this chapter.
+    \newpage 
+    \subsection{Random forests}
   \newpage
   \section{Handling missing values}
     In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand. \citep{otfi}
