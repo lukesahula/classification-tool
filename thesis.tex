@@ -3,12 +3,16 @@
 \usepackage{mathtools} 
 \usepackage[utf8]{inputenc}
 \usepackage[czech]{babel}
-\usepackage[]{algorithm2e}
 \usepackage{url}
 \usepackage{xcolor}
 \usepackage[square,sort,comma,numbers]{natbib}
 \usepackage{url}
 \usepackage{hyperref}
+\hypersetup{
+  colorlinks = true,
+  citecolor = gray,
+}
+\usepackage{algpseudocode, algorithm}
 
 \urlstyle{same}
 \bibliographystyle{IEEEtran}
@@ -45,7 +49,9 @@
     \\~\\
     In order for a classification algorithm to work, it has to be trained on some set of data. In this case the datasets are encrypted network traffic and as such they contain a moderate amount of {\it missing data}. Most classification algorithms are not designed with an implicit way of dealing with missing values and thus they have to be handled before or during the classification process.
     \\~\\
-    Over the past two decades, a moderate amount of methods for dealing with missing data has been introduced, but none has yet shown superior results that would put it above the others. Plenty of methods are somewhat situational and work only with specific cases of missing data. Thus it is not clear which method to choose at which time. This thesis studies these methods along with analysing the network proxy log datasets in order to find out the most efficient one.
+    Over the past two decades \cite{otfi}\cite{lwd}\cite{mia}, a moderate amount of methods for dealing with missing data has been introduced, but none has yet shown superior results that would put it above the others. Plenty of methods are somewhat situational and work only with specific cases of missing data. Thus it is not clear which method to choose at which time. This thesis studies these methods along with analysing the network traffic datasets in order to find out the most efficient one.
+    \\~\\
+    The dataset used in this thesis contains real and huge data spanning across more than a hundred of enterprises. As such, one of the concerns in choosing the methods for handling missing data are its computational speed and memory demands.
     \\~\\
     The thesis consists of several sections. At the beginning, there is a brief introduction to malware classification, followed by an explanation of the classification algorithm often connected to the missing data problem - the {\it random forest classifier}. The next chapter concerns itself with missing data mechanisms and gives a summary of known algorithms for missing data {\it imputation}. The chapter after that provides an analysis of the network datasets. The last section is dedicated to the conducted experiments and results of this thesis.
   \newpage
@@ -60,23 +66,23 @@
       \\~\\
       Ransomware is a potentialy very dangerous software that threatens to delete, block or publish the target's data if the programs authors requirements are not met. \cite{ransomware}
       \\~\\
-      When malware spreads through the network, or when it communicates with their command and control computers, it leaves a detectable trace in the network traffic. What more, these traces can often be found much sooner (ranging from weeks to months) than researchers are able to capture a sample of the invading malware. \cite{network} According to the five years long study by Georgia Institute of Technology, the endpoints with which specific malware communicates do not change in long time periods (years). This means that once a node in the network suspicious of being infected is found, it is possible to look for traffic going in and out, which in turn can help with identifying other infected devices. \cite{network}
-      \newpage
+      When malware spreads through the network, or when it communicates with their command and control computers, it leaves a detectable trace in the network traffic. What more, these traces can often be found much sooner (ranging from weeks to months) than researchers are able to capture a sample of the invading malware. \cite{network} This only emphasizes the importance of utilizing machine learning in the context of malware detection, manual systems and blacklists are not enough today.
+      \\~\\
+      According to the five years long study by Georgia Institute of Technology, the endpoints with which specific malware communicates do not change in long time periods (years). This means that once a node in the network suspicious of being infected is found, it is possible to look for traffic going in and out, which in turn can help with identifying other infected devices. \cite{network}
     \subsection{Classification}
-      In statistics and machine learning, classification is the process of assigning a specific category, or a {\it class}, to which a new object or an observation belongs. This assignment, or {\it prediction}, is done after processing a set of previously categorized data, often called the {\it training dataset}. This is done by a classification algorithm, known as a {\it classifier}. This classifier learns from a set of data, for example emails labeled as spam or non-spam, in order to predict the category of new incoming emails. That way an email client can move unwanted spam to the spam folder and keep the relevant mail in the inbox. Another is predicting whether a patient's tumor is benign or malign, based on the hospital records with data from other patients. Or, as will be the case in this thesis, whether an instance of network traffic is the result of (and which) malware, based on data gained from network proxy logs.
+      In statistics and machine learning, classification is the process of assigning a specific category, or a {\it class}, to which a new object or an observation belongs. \cite{elements} This assignment, or {\it prediction}, is done after processing a set of previously categorized data, often called the {\it training dataset}. \cite{elements} This is done by a classification algorithm, known as a {\it classifier}. \cite{elements} This classifier learns from a set of data, for example emails labeled as spam or non-spam, in order to predict the category of new incoming emails. That way an email client can move unwanted spam to the spam folder and keep the relevant mail in the inbox. Another is predicting whether a patient's tumor is benign or malign, based on the hospital records with data from other patients. Or, as will be the case in this thesis, whether an instance of network traffic is the related to (and which) malware, based on data gained from network proxy logs.
       \\~\\
-      Within the terminology of machine learning, classification is in the category of {\it supervised learning}. \cite{mlintro} Supervised learning means that the classifier learns from the training dataset with labeled data. This dataset is often in the form of a matrix. The rows in this matrix are called {\it feature vectors}. They contain the observed attributes, called {\it features}, of each individual object. These features are quantifiable and can be categorical (smoker or non-smoker), integer-valued (age of the patient in years), or real-valued (patient's body temperature). Since the learning is supervised, the dataset also includes a column with the class labels of each observed object.
+      Within the terminology of machine learning, classification is in the category of {\it supervised learning}. \cite{mlintro} Supervised learning means that the classifier learns from the training dataset with labeled data. This dataset is often processed into the form of a matrix $\mathbf{X}$ in order to make the work with it more convenient. The rows in this matrix contain the observed attributes, called {\it features}, of each individual object. The rows are sometimes called {\it feature vectors}, labeled $\mathbf{x} = \left( x_1, x_2, x_3, ..., x_i \right)$ where $i$ denotes the number of features. Feature vector sometimes refers to the column, containing all values of a single feature across all objects. However, in this thesis, feature vectors refer to the rows. These features are quantifiable and can be categorical (smoker or non-smoker), integer-valued (age of the patient in years), or real-valued (patient's body temperature). Since the learning is supervised, the dataset also includes a column with the class labels of each observed object labeled $\mathbf{Y}$.
       \\~\\
-      When the classifier is trained, it can predict the classes of new objects based on their features. The mathematical function implemented by the classifier maps input feature vectors {\bf x} of a matrix {\bf X} to a class {\bf c}. The performance of the classifier is usually tested on another set of data called the {\it testing dataset}.
+      When the classifier is trained, it can predict the classes of new objects based on their features. The mathematical function implemented by the classifier maps input feature vectors $\mathbf{x}$ of a matrix $\mathbf{X}$ to a class $\mathbf{c}$ from the set of classes $\mathbf{C}$. The performance of the classifier is usually tested on another set of data called the {\it testing dataset}. That is done to avoid {\it overfitting} - "the production of an analysis that corresponds too closely or exactly to a particular set of data, and may therefore fail to fit additional data or predict future observations reliably". \cite{oxford} According to this definition, an overfitted classifier could be able to predict the classes of the objects in its training dataset accurately, yet completely miss the classes of new objects. The opposite of overfitting is {\it underfitting}, which can also be avoided by measuring the classifier's performance on the testing dataset. In machine learning, overfitting and underfitting is sometimes also called "overtraining" and "undertraining" respectively.
       \\~\\
       Classification does not always have to be binary, meaning the data can be of more than two categories. This is called {\it multiclass classification}. Returning to the example of e-mail classification, some classifiers could be trained to predict whether an incoming e-mail belongs to {\it work}, {\it school}, or {\it personal} categories.
       \\~\\
       There are also other forms of classification, like the {\it multilabel classification}. In multilabel classification, multiple classes can be assigned to an observation. This makes sense in cases where the categories are not mutually exclusive. However, this thesis will be focusing only on the problem of multiclass classification.
     \subsection{Malware classification}
-      As was mentioned in the malware section of this chapter, malware can often be detected very early by monitoring the incoming and outgoing network traffic of the observed device. However, this is not something that any computer user can do, and even then it can prove to be a relatively tedious task. In this day and age there can be thousands of individual network requests performed by a computer and going through them manually seems almost impossible. As such, it would be much more convenient to take all the data and feed it to a machine learning algorithm to do the work instead.
+      As was mentioned in the malware section of this chapter, malware can often be detected very early by monitoring the incoming and outgoing network traffic of the observed device. However, this is not something that every computer user can do, and even then it can prove to be a relatively tedious task. In this day and age there can be thousands of individual network requests performed by a computer and going through them manually seems almost impossible. As such, it would be much more convenient to take all the data and feed it to a machine learning algorithm to do the work instead.
       \\~\\
-      This thesis is based on the work done on labeled network datasets containing observations of more than two hundred different classes of malware. The goal is not only to be able to predict whether a computer is infected with malware, but also to decide which class of malware infection it is.
-      {\color{red}TODO}
+      This thesis is based on the work done on labeled network datasets containing observations of more than two hundred different classes of malware. The goal is not only to be able to predict whether a computer is infected with malware, but also to decide which class of malware infection it is. It is, therefore, a case of multiclass classification.
       
   \newpage
   \section{Random forest classifier}
@@ -85,7 +91,7 @@
     This chapter explains in detail how random forests work and how they can be implemented. As the name implies, random forest is an ensemble of learning algorithms called {\it decision trees}. In order to understand random forests, decision trees are the first thing that needs to be explained.
     \subsection{Decision trees}
       \subsubsection{Overview}
-        {\it Decision tree classifier} is a classification algorithm probably named because of its structure resembling a decision tree known from graph theory. Another variation of a decision tree is the regression tree, which only differs in that the predicted outcome is not a class but a real value. One of the most significant publications about decision trees is {\it Classification and Regression Trees} by L. Breiman. It introduces the {\it CART algorithm} for growing both classification and regression trees. \cite{cart} Other algorithms for growing decision trees also exist, for example the {\it ID3 algorithm} or the {\it C4.5 algorithm}.
+        {\it Decision tree classifier} is a classification algorithm named because of its structure resembling a tree known from graph theory. Another variation of a decision tree is the regression tree, which only differs in that the predicted outcome is not a class but a real value. One of the most significant publications about decision trees is {\it Classification and Regression Trees} by L. Breiman. It introduces the {\it CART algorithm} for growing both classification and regression trees. \cite{cart} Other algorithms for growing decision trees also exist, for example the {\it ID3 algorithm} or the {\it C4.5 algorithm}.
         \\~\\
         Prediction using a decision tree can be interpreted as a set of questions asking about the attributes of the observed object. For example, predicting whether a picture is taken outdoors or indoors could work as follows:
         \begin{itemize}
@@ -99,10 +105,10 @@
             \end{itemize}
           \end{itemize}
         \end{itemize}
-        As can be seen in the example, a grown tree is built from a root node, decision nodes and terminal nodes, also called {\it leaves}. All leaves are associated with the resulting prediction class. Each decision node contains information about its split, which consists of the selected feature and its value. When an observed object is analysed to predict its class, the value of the feature in question is compared with the value stored at the decision node. Depending on the result of this comparison, the object is then sent to the left child or the right child of the node. When the object reaches a leaf node, it is given the class that is associated with it. This explanation is visualised in Figure \ref{figure:decision_tree}.
+        As can be seen in the example, a grown tree is built from a root node, decision nodes and terminal nodes, also called {\it leaves}. All leaves are associated with the resulting prediction class. Each decision node contains information about its split, which consists of the selected feature and its value. When an observed object is analysed to predict its class, the value of the feature in question is compared with the value stored at the decision node. Depending on the result of this comparison, the object is then sent to the left child or the right child of the node. When the object reaches a leaf node, it is given the class that is associated with it. This explanation is visualised in [\ref{figure:decision_tree}].
         \begin{figure}
           \centering
-          \includegraphics{thesis_res/decision_tree.png}
+          \includegraphics[scale=0.7]{thesis_res/decision_tree.png}
           \caption{Picture of a decision tree with the training data used for its growth. \cite{digstaining}}
           \label{figure:decision_tree}
         \end{figure}
@@ -122,23 +128,43 @@
         \item They are prone to {\it overfitting}. \cite{isl}
         \end{itemize}
         All these disadvantages are going to be addresed again in the random forests part of this chapter.
-      \subsubsection{Training a decision tree}
-        
+      \subsubsection{Growing a decision tree}
+        Training a decision tree classifier is done by recursively partitioning the input data according to the best calculated split. The split specifies the feature and value at which the data is partitioned into two parts. Once the data is partitioned, a new node $t_i$ is created and the process continues at its children. [\ref{alg:grow_tree}] If it is for some reasons impossible to split the input dataset, a leaf node is created and the recursion does not continue.
+        \\~\\
+        To expand on the notation, the nodes are numbered in breadth-first order, starting with the root node $t_0$. Since all the trees encountered in this thesis are binary, the left child of node $t_i$ can be denoted as $t_i^L$ and the right child can be denoted as $t_i^R$. Since the dataset is being recursively partitioned, the subset of samples belonging to node $t_i$ can be denoted as $S_i$. The subset of samples belonging to the left child of node $t_i$ is denoted as $S_i^L$ and the one belonging to the right child as $S_i^R$. It follows that $S_i = S_i^L \cup S_i^R$ and that $S_i^L \cap S_i^R = \theta$ for every inner node.
+        \\~\\
+        \begin{algorithm}
+          \caption{This algorithm shows how the decision tree classifier is grown recursively.}
+          \label{alg:grow_tree}
+          \begin{algorithmic}[1] % The number tells where the line numbering should start
+            \Function{GrowTree}{$S_i$}
+              \If{$ShouldCreateLeafNode(S_i)$}
+                \State \Return $CreateLeafNode(S_i)$
+              \EndIf
+              \State $\theta \gets FindBestSplitParameters(S_i)$
+              \State $S_i^L, S_i^R \gets SplitDataset(S_i, \theta)$
+              \State $t_i^L \gets GrowTree(S_i^L)$
+              \State $t_i^R \gets GrowTree(S_i^R)$
+              \State \Return $t_i$
+            \EndFunction
+          \end{algorithmic}
+        \end{algorithm}
+      \subsubsection{When to create a leaf node} 
     \newpage 
     \subsection{Random forests}
   \newpage
   \section{Handling missing values}
     In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand. \cite{otfi}
     \\~\\
-    There are various ways of handling missing data, some as simple as dropping the samples containing any missing values altogether, leaving only those samples with all data present. \cite{lwd} This however, cannot be done when there are missing data somewhere in most of the observations. Another simple method, the strawman imputation \cite{otfi} would be replacing missing data with the mean or median of all the non-missing values of the feature in question. The process of replacing the missing data is called {\it imputation}.
+    There are various ways of handling missing data, some as simple as dropping the samples containing any missing values altogether, leaving only those samples with all data present. \cite{lwd} This however, cannot be done when there are missing data somewhere in most of the observations. Another simple method, the strawman imputation \cite{otfi} would be replacing missing data with the mean or median of all the non-missing values of the feature in question. The process of replacing the missing data is called {\it imputation}. Only the imputation methods related to random forests are examined in this thesis because of the nature of the analysed data. Also, most of the interesting imputation methods already are in this subset.
     \\~\\
     More sophisticated methods of imputation also exist and they are discussed more thoroughly in this thesis. Some methods work better with smaller datasets, or with datasets with low missingness ratio. The amount of correlation between feature variables can also be important to some methods and not that important to others. \cite{otfi} Some imputation algorithms are very slow and using them in experiments with big datasets can get seriously time-consuming. In other words, choosing a relevant method of imputation for a given dataset is not a simple task and it can prove useful to do an analysis of the data as well as an analysis of the imputation algorithm itself beforehand.
     \subsection{Related work}
-      Various works comparing different imputation methods were published in the last years. Three imputation methods meant for decision trees are well explained in a paper called {\it Good methods for coping with missing data in decision trees}. \cite{mia}
+      Various works comparing different imputation methods were published in the last years. Multiple imputation methods meant for decision trees are well explained in \cite{mia}.
       \\~\\
-      Another work worth mentioning that focuses on random forests and missing data imputation is {\it Random survival forests}. \cite{rsf}
+      Another work worth mentioning that focuses on random forests and missing data imputation is \cite{rsf}. It introduces a new type of random forests along with the {\it adaptive tree imputation} method. However, this method can be used with regular random forests as well.
       \\~\\
-      Perhaps the most recent work on this topic is {\it Random Forest Missing Data Algorithms} \cite{otfi} which is a continuation of the previous one by one of the same authors. In this paper, five ways of imputation using random forests are discussed in detail and tested on multiple datasets with different attributes. A comparison of their imputation accuracy is made as well.
+      Perhaps the most recent work on this topic is \cite{otfi} which is a continuation of the previous work by one of the same authors. In this paper, multiple approaches to imputation using random forests are discussed in detail and tested on multiple datasets with different attributes. A comparison of their imputation accuracy is made as well. The datasets used in this work are both real and synthetic. However, the missingness is induced manually \cite{otfi} and thus the results of the experiments can be biased.
     \\~\\
     \subsection{Missing data mechanisms}
       Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms. \cite{lwd} It is important to understand these mechanisms in order to make an educated assumption about the dataset in question. If an assumption is made that the values are missing completely at random while they are missing systematically, an analysis based on this assumption may be biased.
@@ -149,23 +175,20 @@
       \end{itemize}
     \subsection{Selected imputation algorithms}
       This section contains a list of imputation algorithms that were taken in consideration when deciding which ones to implement.
-      \begin{itemize}
-      \item Strawman imputation
-      \item Proximity imputation
-      \item On-the-fly-imputation
-      \item Missingness incorporated in attributes
-      \item Unsupervised imputation
-      \item missForest
-      \item Surrogate splits
-      \end{itemize}
+      \subsubsection{Baseline imputation}
+        This method will be used throughout the thesis as the baseline reference value. It replaces the missing data with a constant value outside of the features' interval before growing the tree. Thus, when an object is evaluated and the relevant feature is missing, the object is always sent either to the left or to the right, based on the value that was chosen at the start.
+      \subsubsection{Strawman imputation}
+        {\it Strawman imputation} \cite{otfi} is a simple method for handling missing values. It works very fast compared to other methods and its implementation is very simple. The missing values are imputed before the forest is grown by calculating the median of non-missing values in the feature column. An altered variation of strawman imputation uses the mean instead of the median.
       \subsubsection{On-the-fly-imputation}
-        {\it Adaptive tree imputation} \cite{rsf} or {\it On-the-fly-imputation} \cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
+        {\it Adaptive tree imputation} \cite{rsf} later named as {\it On-the-fly-imputation} \cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
         \begin{enumerate}
         \item First, the best split is calculated as usual, using only non-missing data.
         \item After finding the best split, random values from the non-missing in-bag data within the current node are used to impute the missing values.
         \item Once the data are imputed, the node is split into the left and right children nodes and the imputed data are reset back to missing.
         \end{enumerate}
         The values the algorithm uses to impute the missing data are stored within the decision node while growing the tree along with the respective frequencies in which they occur within the node's dataset. These are then used again to impute the missing values in the testing dataset at the time of prediction to decide whether the observation belongs to the left or to the right child. After being sent to the child node, the imputed data is reset to missing again and the process repeats.
+        \\~\\
+        The implementation of OTFI algorithm used for experiments in this thesis had to be improved in order to increase imputation speed and reduce the memory used. Instead of storing the non-missing values and their frequencies, only the probability of the node going left or right is saved at the node. That way, when a new object with a missing value at the relevant feature is examined, the missing value is not imputed at all.
       \subsubsection{Missingness incorporated in attributes}
         {\it Missingness incorporated in attributes} \cite{mia} (MIA) works similarly to OTFI in that it also imputes missing data during the forest growing process. It searches for the best split in three different approaches to the missing data. Let {\it X} be a numeric feature used to split a node and {\it s} a possible split value of {\it X}. Over all split values, the method looks at the following:
         \begin{itemize}
@@ -174,12 +197,8 @@
         \item Split C: \{ $X =$ missing \} versus \{ $X =$ not missing \}.
         \end{itemize}
         After finding the best split in each approach separately, the algorithm then chooses which one of them provides a better information gain and then it splits the dataset accordingly. As in the OTFI method, the decision node here remembers which split type it had assigned in order to decide how the testing data should be propagated during prediction.
-      \subsubsection{Strawman imputation}
-        {\it Strawman imputation} \cite{otfi} is a simple method for handling missing values. It works very fast compared to other methods and its implementation is very simple. The missing values are imputed before the forest is grown by calculating the median of non-missing values in the feature column.
-        \\~\\
-        Considering the implementation is a matter of seconds, an altered version of strawman imputation was also used, one that uses mean instead of median.
-        \\~\\
-        Further alteration inspired by the on-the-fly-imputation method could be done to strawman imputation. That is, the mean or median could be calculated later during the process of growing a decision tree, at the moment of splitting. But instead of choosing randomly from the in-bag frequencies of non-missing values, mean or median of the in-bag data would be stored at the node and used later for predictions.
+      \subsubsection{Other algorithms}
+        Other notable imputation algorithms were also considered, such as {\it surrogate splits}\cite{splits} or {\it missForest}\cite{otfi}. However, surrogate splits perform less reliably as the amount of missing data increases\cite{splits} and are slow when used with larger datasets. \cite{rsf} The low computational speed is a problem for missForest as well, making it "100's of times" slower than methods like OTFI or MIA. \cite{otfi}
   \section{Network dataset}
     {\color{red}TODO}
     \subsection{Dataset description}
