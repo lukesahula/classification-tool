@@ -1,6 +1,8 @@
 \documentclass[11pt]{article}
 
-\usepackage{mathtools} 
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsmath} 
 \usepackage[utf8]{inputenc}
 \usepackage[czech]{babel}
 \usepackage{url}
@@ -105,7 +107,7 @@
             \end{itemize}
           \end{itemize}
         \end{itemize}
-        As can be seen in the example, a grown tree is built from a root node, decision nodes and terminal nodes, also called {\it leaves}. All leaves are associated with the resulting prediction class. Each decision node contains information about its split, which consists of the selected feature and its value. When an observed object is analysed to predict its class, the value of the feature in question is compared with the value stored at the decision node. Depending on the result of this comparison, the object is then sent to the left child or the right child of the node. When the object reaches a leaf node, it is given the class that is associated with it. This explanation is visualised in [\ref{figure:decision_tree}].
+        As can be seen in the example, a grown tree is built from a root node, decision nodes and terminal nodes, also called {\it leaves}. All leaves are associated with the resulting prediction class. Each decision node contains information about its split, which consists of the selected feature and its value. When an observed object is analysed to predict its class, the value of the feature in question is compared with the value stored at the decision node. Depending on the result of this comparison, the object is then sent to the left child or the right child of the node. When the object reaches a leaf node, it is given the class that is associated with it. This explanation is visualised in figure [\ref{figure:decision_tree}].
         \begin{figure}
           \centering
           \includegraphics[scale=0.7]{thesis_res/decision_tree.png}
@@ -129,12 +131,12 @@
         \end{itemize}
         All these disadvantages are going to be addresed again in the random forests part of this chapter.
       \subsubsection{Growing a decision tree}
-        Training a decision tree classifier is done by recursively partitioning the input data according to the best calculated split. The split specifies the feature and value at which the data is partitioned into two parts. Once the data is partitioned, a new node $t_i$ is created and the process continues at its children. [\ref{alg:grow_tree}] If it is for some reasons impossible to split the input dataset, a leaf node is created and the recursion does not continue.
+        Training a decision tree classifier is done by recursively partitioning the input data according to the best calculated split. The split specifies the feature and value at which the data is partitioned into two parts. Once the data is partitioned, a new node $t_i$ is created and the process continues at its children, see algorithm [\ref{alg:grow_tree}]. If it is for some reasons impossible or not needed to split the input dataset, a leaf node is created and the recursion does not continue. \cite{brabec}
         \\~\\
-        To expand on the notation, the nodes are numbered in breadth-first order, starting with the root node $t_0$. Since all the trees encountered in this thesis are binary, the left child of node $t_i$ can be denoted as $t_i^L$ and the right child can be denoted as $t_i^R$. Since the dataset is being recursively partitioned, the subset of samples belonging to node $t_i$ can be denoted as $S_i$. The subset of samples belonging to the left child of node $t_i$ is denoted as $S_i^L$ and the one belonging to the right child as $S_i^R$. It follows that $S_i = S_i^L \cup S_i^R$ and that $S_i^L \cap S_i^R = \theta$ for every inner node.
+        To expand on the notation, the nodes are numbered in breadth-first order, starting with the root node $t_0$. Since all the trees encountered in this thesis are binary, the left child of node $t_i$ can be denoted as $t_i^L$ and the right child can be denoted as $t_i^R$. Since the dataset is being recursively partitioned, the subset of samples belonging to node $t_i$ can be denoted as $S_i$. The subset of samples belonging to the left child of node $t_i$ is denoted as $S_i^L$ and the one belonging to the right child as $S_i^R$. It follows that $S_i = S_i^L \cup S_i^R$ and that $S_i^L \cap S_i^R = \theta$ for every inner node. \cite{brabec}
         \\~\\
         \begin{algorithm}
-          \caption{This algorithm shows how the decision tree classifier is grown recursively.}
+          \caption{This algorithm shows how the decision tree classifier is grown recursively. It uses the dataset $S_i$ as the input and returns the root node $t_0$ of the tree. \cite{brabec}}
           \label{alg:grow_tree}
           \begin{algorithmic}[1] % The number tells where the line numbering should start
             \Function{GrowTree}{$S_i$}
@@ -149,9 +151,65 @@
             \EndFunction
           \end{algorithmic}
         \end{algorithm}
-      \subsubsection{When to create a leaf node} 
-    \newpage 
+      \subsubsection{When to create a leaf node}
+        Multiple conditions are checked before the dataset $\mathbf{S_i}$ is split, depending upon which the split may not even take place and a leaf node gets created. The conditions may differ among different implementations of the tree. The ones used for the purposes of this thesis are the following:
+        \begin{itemize}
+          \item Check the number of unique classes in dataset $\mathbf{S_i}$. If all the samples are of the same class, there is no need to split further and a leaf node can be created. \cite{brabec}
+          \item Check if it is possible to split the dataset $\mathbf{S_i}$ at least once. It is possible, that all the feature vectors in $\mathbf{S_i}$ are the same, but their classes differ. If that is the case, a leaf node is created. \cite{brabec}
+          \item One of the parameters of a decision tree is usually the minimum number of samples required to split the dataset ($minSamplesToSplit$). If $|\mathbf{S_i}| < minSamplesToSplit$ then a leaf node is created. This parameter is often set low in random forests because it allows the trees to grow deeper. \cite{brabec}
+        \end{itemize}
+        Other implementations also include the $maxDepth$ parameter, limiting the maximum depth of a tree, or the change in {\it impurity measure} (information gain) as the stopping condition during node splitting. \cite{brabec}
+      \subsubsection{How to create a leaf node}
+        The leaf node contains the subset of sampled associated with it. Upon arriving in a leaf node during prediction, the most common choice is to return the class with maximum frequency in the samples. Different implementations can return the whole normalized histogram of classes in the samples, where each value represents the probability of the object belonging to the given class.
+      \subsubsection{Finding the best split}
+        The best split out of all possible splits of the dataset is defined as the one that provides the largest {\it information gain}. Information gain corresponds to the decrease in impurity in the node's children. {\it Impurity measure} of node's subset $\mathbf{S_i}$ is a function $i(\mathbf{S_i}) \in \mathbb{R}$. The purer the data (the lower the impurity measure), the more confidence can be given in the node's prediction. Therefore, the split $\theta_i$ that reduces the impurity in the node's children the most, is also the best split. To find it, all possible splits have to evaluated. The decrease in impurity is defined as follows:
+        \begin{equation}
+          \Delta i(\mathbf{S_i}, \theta_i) = i(\mathbf{S_i}) - \frac{|\mathbf{S_i^L}|i(\mathbf{S_i^L}) + |\mathbf{S_i^R}|i(\mathbf{S_i^R})}{|\mathbf{S_i}|}
+        \end{equation}
+        There are several impurity measures, most common of which are {\it Gini impurity} and {\it entropy}. Studies show that there is not a significant difference between the two and therefore can be used interchangebly. \cite{gini} Only entropy is used for the purposes of this thesis. Entropy is defined as:
+        \begin{equation}
+          H(\mathbf{X}) = - \sum_{c \in \mathbf{C}}^{n} p(c)\log{p(c)}
+        \end{equation}
+        Where $\mathbf{C}$ is the set of classes and $p(c)$ is the frequency of class $c$ in the node's subset $\mathbf{S_i}$. \cite{brabec} If the class is not in the subset at all, it does not add to the sum anything either. The entropy is at its maximum if the classes in the subset $\mathbf{S_i}$ are equally distributed. If all the objects belong to the same class, the entropy equals to zero. As was stated earlier, information gain corresponds to the decrease in impurity $\Delta i(\mathbf{S_i}, \theta_i)$. \cite{brabec}
+        \\~\\
+        To select the best split, all splits along every dimension have to be evaluated. \cite{brabec}. This can be optimised, as is shown in algorithm [\ref{alg:best_split}]. The data points are grouped together to reduce duplicities. This means that out of 50 objects having the same coordinate in the evaluated dimension, we only remember the class counts of those 50 objects and the coordinate itself. Further work in finding the split is done only with the class counts. \cite{brabec}
+        \begin{algorithm}
+          \caption{This algorithm shows how to find the split with the highest information gain. \cite{brabec}}
+          \label{alg:best_split}
+          \begin{algorithmic}[1] % The number tells where the line numbering should start
+            \Function{FindBestSplitParameters}{$S_i$}
+              \State $maxGain_\Delta \gets -\infty$
+              \For{$all dimensions$}
+                \State $counts^L \gets (0, 0, ..., 0)$
+                \State $counts^R \gets GetClassCounts(S_i)$
+                \State $coordinates \gets$ find unique coordinates in dimension
+                \State $Sort(coordinates)$
+                \For{$point \in coordinates$}
+                  \State $counts^L \gets$ add class counts present on point
+                  \State $counts^R \gets$ remove class counts present on point
+                  \State $currentGain_\Delta = ComputeGain_\Delta(counts^L, counts^R)$
+                  \If{$currentGain_\Delta > maxGain_\Delta$}
+                    \State $maxGain_\Delta \gets currentGain_\Delta$
+                    \State $\theta_i \gets$ create split parameters from point and neighbor
+                  \EndIf
+                \EndFor
+              \EndFor
+              \State \Return $\theta_i$
+            \EndFunction
+            \Function{$ComputeGain_\Delta$}{$counts^L, counts^R$}
+              \State $size^L \gets Sum(counts^L)$
+              \State $size^R \gets Sum(counts^R)$
+              \State \Return $- \frac{size^L \times H(counts^L) + size^R \times H(counts^R)}{size^L + size^R}$
+            \EndFunction
+          \end{algorithmic}
+        \end{algorithm}
+        Since many features can have only a very limited set of values, this optimisation can give a significant performance boost to the algorithm. \cite{brabec} By sorting the coordinates, the class counts can be added to $counts^L$ and removed from $counts^R$ in an organised way. That is done by iterating over all of the sorted coordinates throughout the dimension. This approach also makes the time of each entropy calculation constant because it is dependent only on the number of classes, instead of the number of objects. \cite{brabec}
+        \\~\\
+        After finding the best possible split $\theta_i$, the dataset $\mathbf{S_i}$ is then partitioned into $\mathbf{S_i^L}$ and $\mathbf{S_i^R}$ by a threshold set by the splits feature and value. Considering the number of dimensions and classes are constant, the worst case time complexity of this algorithm is $\mathcal{O}(|\mathbf{S_i}\log{\mathbf{S_i}})$. The worst case is the one where there are no data points with duplicate coordinates and the sorting of the coordinates will equal to sorting the whole dataset. In practice, however, it can be expected that the performance will be better, but still highly dependant on the given data. \cite{brabec}
     \subsection{Random forests}
+      Since single decision forests tend to overfit to the training data\cite{icl}, are not making very accurate predictions, and tend to change significantly with small alterations to the datasets, they do not look very good compared to other approaches. However, {\it ensemble method} called random forests was invented. It puts randomized decision trees together and builds a much stronger classifier.
+      In this subsection the process of putting the decision trees together to form a random forest is going to be explained.
+      \subsubsection{Bootstrap aggregating}
   \newpage
   \section{Handling missing values}
     In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand. \cite{otfi}
