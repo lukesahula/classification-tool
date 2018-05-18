@@ -309,17 +309,16 @@
     \subsection{Results}
       This subsection presents the results of the individual experiments. The main focus is the average prediction precision, recall and also the number of classes that were predicted with precision above specific thresholds. The following tables will always show all three evaluation approaches for every tested method. The tested methods are the baseline[\ref{sec:baseline}] method, the Strawman[\ref{sec:strawman}] imputation method both with mean and median values, the OTFI[\ref{sec:otfi}] method and the MIA[\ref{sec:mia}] method. The two variations of the Strawman method are further referred to simply as mean and median.
       \subsubsection{Average overall precision}
-        The first metric to look at is the overall precision. It is the precision in the form that was declared in at the beginning of this chapter. Looking at table [\ref{table:overall_prec}], it can be seen that the OTFI method does not bring any improvement compared to the baseline and its results are actually even weaker.
-        \begin{table}
+        The first metric to look at is the overall precision. It is the precision in the form that was declared in at the beginning of this chapter. Looking at figure [\ref{figure:overall_prec}], it can be seen that the OTFI method does not bring any improvement compared to the baseline and its results are actually even weaker.
+        \begin{figure}
           \centering
           \caption{Average overall precision of the tested methods.}
-          \label{table:overall_prec}
+          \label{figure:overall_prec}
           \begin{tikzpicture}
             \begin{axis}[
                 ybar,
                 width=12cm,
                 height=10cm,
-                ylabel={Average overall precision},
                 symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
                 xtick=data,
                 legend style={at={(0.5, -0.2)},
@@ -341,19 +340,18 @@
               \legend{Unaggregated, Aggregated, Relaxed}
             \end{axis}
           \end{tikzpicture}
-        \end{table}
+        \end{figure}
       \subsubsection{Average overall precision without the negative class}
-        In some situations, it is relevant to only see the precision of prediction of the positive classes, discarding the negative one. Especially in this case, where the dataset is heavily imbalanced and the amount of negative objects drastically exceeds the amount of positive ones. This precision is shown in table [\ref{table:overall_prec_no_legit}].
-        \begin{table}
+        In some situations, it is relevant to only see the precision of prediction of the positive classes, discarding the negative one. Especially in this case, where the dataset is heavily imbalanced and the amount of negative objects drastically exceeds the amount of positive ones. This precision is shown in figure [\ref{figure:overall_prec_no_legit}].
+        \begin{figure}
           \centering
           \caption{Average overall precision of the tested methods, excluding the negative class.}
-          \label{table:overall_prec_no_legit}
+          \label{figure:overall_prec_no_legit}
           \begin{tikzpicture}
             \begin{axis}[
                 ybar,
                 width=12cm,
                 height=10cm,
-                ylabel={Average overall precision without the negative class},
                 symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
                 xtick=data,
                 legend style={at={(0.5, -0.2)},
@@ -375,21 +373,20 @@
               \legend{Unaggregated, Aggregated, Relaxed}
             \end{axis}
           \end{tikzpicture}
-        \end{table}
+        \end{figure}
       \subsubsection{Average overall precision without nans}
-        In some cases, one or more classes do not have any precision statistics because the classifier never predicted this specific class to any of the objects. They are represented as {\it not a number}, shortened as {\it nan} values. When computing average precision, these classes add to the amount of classes by default. Table [\ref{table:overall_prec_no_nan}] shows the average overall precision while skipping them altogether.
+        In some cases, one or more classes do not have any precision statistics because the classifier never predicted this specific class to any of the objects. They are represented as {\it not a number}, shortened as {\it nan} values. When computing average precision, these classes add to the amount of classes by default. Figure [\ref{figure:overall_prec_no_nan}] shows the average overall precision while skipping them altogether.
         \\~\\
         It shows a big increase in OTFI method precision, which gives some insight into why it has such low scores in the other categories. The split statistics computed when growing a tree[\ref{sec:split}] are done only on non-missing data.[\ref{sec:otfi}] As such, the OTFI method drops all the missing data and because a big portion of the network data itself is missing, there is not much left for the tree to grow properly.
-        \begin{table}
+        \begin{figure}
           \centering
           \caption{Average overall precision of the tested methods, excluding classes that were never predicted.}
-          \label{table:overall_prec_no_nan}
+          \label{figure:overall_prec_no_nan}
           \begin{tikzpicture}
             \begin{axis}[
                 ybar,
                 width=12cm,
                 height=10cm,
-                ylabel={Average overall precision without nans},
                 symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
                 xtick=data,
                 legend style={at={(0.5, -0.2)},
@@ -411,19 +408,18 @@
               \legend{Unaggregated, Aggregated, Relaxed}
             \end{axis}
           \end{tikzpicture}
-        \end{table}
+        \end{figure}
       \subsubsection{Average overall precision without nans and the negative class}
-        This evaluation approach is a combination of the previous two.[\ref{table:overall_prec_no_nan_no_negative}] The OTFI method has a hundred percent precision overall precision in this case. This means that the classifier predicted correctly all the positive classes it recognized. This, however, does not say much, because the number of positive classes it did recognized is much smaller than the other methods.
-        \begin{table}
+        This evaluation approach is a combination of the previous two.[\ref{figure:overall_prec_no_nan_no_negative}] The OTFI method has a hundred percent precision overall precision in this case. This means that the classifier predicted correctly all the positive classes it recognized. This, however, does not say much, because the number of positive classes it did recognized is much smaller than the other methods.
+        \begin{figure}
           \centering
           \caption{Average overall precision of the tested methods, excluding classes that were never predicted and the negative class.}
-          \label{table:overall_prec_no_nan_no_negative}
+          \label{figure:overall_prec_no_nan_no_negative}
           \begin{tikzpicture}
             \begin{axis}[
                 ybar,
                 width=12cm,
                 height=10cm,
-                ylabel={Average overall precision without negative class and nans},
                 symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
                 xtick=data,
                 legend style={at={(0.5, -0.2)},
@@ -445,11 +441,166 @@
               \legend{Unaggregated, Aggregated, Relaxed}
             \end{axis}
           \end{tikzpicture}
-        \end{table}
+        \end{figure}
       \subsubsection{Number of classes with precision above a certain threshold}
         Average overall precision works as a metric to give a solid first view of the classifier's performance. However, it does not say much about the balance of the classifier. If the testing dataset had for example 90 objects of class 1 and the remaining 10 objects were of 10 different classes, the average overall precision could be 0.9. Sadly, that does not say if the classifier recognized all the classes, or only the one with 90 samples.
         \\~\\
-        Because of that, it is good to look at the number of classes that were predicted with precision above some chosen threshold.
+        Because of that, it is good to look at the number of classes that were predicted with precision above some chosen threshold. The thresholds chosen for this experiment are 0.5[\ref{figure:prec_above_0.5}], 0.8[\ref{figure:prec_above_0.8}], 0.9[\ref{figure:prec_above_0.9}], 0.95[\ref{figure:prec_above_0.95}] and 1.0[\ref{figure:prec_above_1.0}]
+        \begin{figure}
+          \centering
+          \caption{Number of classes with precision above 0.5}
+          \label{figure:prec_above_0.5}
+          \begin{tikzpicture}
+            \begin{axis}[
+                ybar,
+                width=12cm,
+                height=10cm,
+                symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
+                xtick=data,
+                legend style={at={(0.5, -0.2)},
+                  anchor=north,legend columns=-1},
+                x tick label style={
+                  rotate=90,
+                  anchor=east,
+                },
+            ]
+              \addplot coordinates {
+                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+              };
+              \addplot coordinates {
+                (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
+              };
+              \addplot coordinates {
+                (Baseline, 0.6042861619122991) (Mean, 0) (Median, 0) (Otfi, 0.8783056076689617) (Mia, 0.6578800808057481)
+              };
+              \legend{Unaggregated, Aggregated, Relaxed}
+            \end{axis}
+          \end{tikzpicture}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \caption{Average overall precision of the tested methods, excluding classes that were never predicted and the negative class.}
+          \label{figure:overall_prec_no_nan_no_negative}
+          \begin{tikzpicture}
+            \begin{axis}[
+                ybar,
+                width=12cm,
+                height=10cm,
+                symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
+                xtick=data,
+                legend style={at={(0.5, -0.2)},
+                  anchor=north,legend columns=-1},
+                x tick label style={
+                  rotate=90,
+                  anchor=east,
+                },
+            ]
+              \addplot coordinates {
+                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+              };
+              \addplot coordinates {
+                (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
+              };
+              \addplot coordinates {
+                (Baseline, 0.6042861619122991) (Mean, 0) (Median, 0) (Otfi, 0.8783056076689617) (Mia, 0.6578800808057481)
+              };
+              \legend{Unaggregated, Aggregated, Relaxed}
+            \end{axis}
+          \end{tikzpicture}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \caption{Average overall precision of the tested methods, excluding classes that were never predicted and the negative class.}
+          \label{figure:overall_prec_no_nan_no_negative}
+          \begin{tikzpicture}
+            \begin{axis}[
+                ybar,
+                width=12cm,
+                height=10cm,
+                symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
+                xtick=data,
+                legend style={at={(0.5, -0.2)},
+                  anchor=north,legend columns=-1},
+                x tick label style={
+                  rotate=90,
+                  anchor=east,
+                },
+            ]
+              \addplot coordinates {
+                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+              };
+              \addplot coordinates {
+                (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
+              };
+              \addplot coordinates {
+                (Baseline, 0.6042861619122991) (Mean, 0) (Median, 0) (Otfi, 0.8783056076689617) (Mia, 0.6578800808057481)
+              };
+              \legend{Unaggregated, Aggregated, Relaxed}
+            \end{axis}
+          \end{tikzpicture}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \caption{Average overall precision of the tested methods, excluding classes that were never predicted and the negative class.}
+          \label{figure:overall_prec_no_nan_no_negative}
+          \begin{tikzpicture}
+            \begin{axis}[
+                ybar,
+                width=12cm,
+                height=10cm,
+                symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
+                xtick=data,
+                legend style={at={(0.5, -0.2)},
+                  anchor=north,legend columns=-1},
+                x tick label style={
+                  rotate=90,
+                  anchor=east,
+                },
+            ]
+              \addplot coordinates {
+                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+              };
+              \addplot coordinates {
+                (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
+              };
+              \addplot coordinates {
+                (Baseline, 0.6042861619122991) (Mean, 0) (Median, 0) (Otfi, 0.8783056076689617) (Mia, 0.6578800808057481)
+              };
+              \legend{Unaggregated, Aggregated, Relaxed}
+            \end{axis}
+          \end{tikzpicture}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \caption{Average overall precision of the tested methods, excluding classes that were never predicted and the negative class.}
+          \label{figure:overall_prec_no_nan_no_negative}
+          \begin{tikzpicture}
+            \begin{axis}[
+                ybar,
+                width=12cm,
+                height=10cm,
+                symbolic x coords={Baseline, Mean, Median, Otfi, Mia},
+                xtick=data,
+                legend style={at={(0.5, -0.2)},
+                  anchor=north,legend columns=-1},
+                x tick label style={
+                  rotate=90,
+                  anchor=east,
+                },
+            ]
+              \addplot coordinates {
+                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+              };
+              \addplot coordinates {
+                (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
+              };
+              \addplot coordinates {
+                (Baseline, 0.6042861619122991) (Mean, 0) (Median, 0) (Otfi, 0.8783056076689617) (Mia, 0.6578800808057481)
+              };
+              \legend{Unaggregated, Aggregated, Relaxed}
+            \end{axis}
+          \end{tikzpicture}
+        \end{figure}
   \newpage
   \section*{Conclusion}
   \addcontentsline{toc}{section}{Conclusion}
