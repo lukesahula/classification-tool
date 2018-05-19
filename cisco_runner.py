@@ -233,9 +233,6 @@ class CiscoRunner():
             loading_tool = LoadingTool(sampling_settings, par_classifier.bins)
             clas_tool = ClassificationTool(par_classifier.classifier)
 
-        if nan_ratio:
-            nan_ratios = self.compute_nan_ratios(t_path, loading_tool)
-
         ser_classifier = SerializableClassifier(
             clas_tool.classifier,
             loading_tool.bins
@@ -392,7 +389,8 @@ class CiscoRunner():
         so = s.sort_values(kind="quicksort")
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
-        ax.matshow(corr_matrix)
+        cax = ax.matshow(corr_matrix)
+        fig.colorbar(cax)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
         return conditioned_pairs
 
@@ -441,7 +439,8 @@ class CiscoRunner():
         so = s.sort_values(kind="quicksort")
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
-        ax.matshow(corr_matrix)
+        cax = ax.matshow(corr_matrix)
+        fig.colorbar(cax)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
         return corr_matrix
 
@@ -451,9 +450,10 @@ class CiscoRunner():
             for col in df.columns:
                 if column.nunique() == 1:
                     if column.unique() == 0:
-                        result.fill(-1)
+                        result.fill(0)
                     else:
-                        result.fill(2)
+                        result.fill(1)
+                    result[column.name] = 0
                     break
                 elif col == column.name:
                     result[col] = 0
@@ -495,7 +495,8 @@ class CiscoRunner():
         so = s.sort_values(kind="quicksort")
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
-        ax.matshow(matrix)
+        cax = ax.matshow(matrix)
+        fig.colorbar(cax)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
 
 
