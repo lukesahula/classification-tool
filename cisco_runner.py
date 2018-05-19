@@ -14,6 +14,8 @@ from collections import defaultdict
 from joblib import Parallel
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 
@@ -47,10 +49,10 @@ class CiscoRunner():
             tee('Relaxed: {}'.format(runner_settings['relaxed']), f)
             tee('NaN value: {}\n'.format(runner_settings['nan_value']), f)
 
-    def __compute_nan_ratios(self, path, loading_tool):
+    def compute_nan_ratios(self, path, loading_tool, output):
         nan_counts_total = defaultdict(int)
         class_counts_total = defaultdict(int)
-        for t_data in loading_tool.load_testing_data(t_path):
+        for t_data in loading_tool.load_testing_data(path, compute_nans=True):
             nan_counts, class_counts = t_data[3]
             for k in nan_counts.keys():
                 nan_counts_total[k] += nan_counts[k]
@@ -60,6 +62,11 @@ class CiscoRunner():
             (n, nan_counts_total[n] / class_counts_total[n])
             for n in set(nan_counts_total) | set(class_counts_total)
         )
+        output_file = os.path.join(output, 'nan_ratios')
+        os.makedirs(output)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for key, value in nan_ratios.items():
+                f.write(str(key) + ': ' + str(value) + '\n')
         return nan_ratios
 
     def __write(self, output, text):
@@ -168,8 +175,8 @@ class CiscoRunner():
         # Configutarion for data preprocessing
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 50000,
-            'bin_samples': 1000,
+            'neg_samples': 1500000,
+            'bin_samples': 50000,
             'seed': random_state,
             'nan_value': nan_value
         }
@@ -227,7 +234,7 @@ class CiscoRunner():
             clas_tool = ClassificationTool(par_classifier.classifier)
 
         if nan_ratio:
-            nan_ratios = self.__compute_nan_ratios(t_path, loading_tool)
+            nan_ratios = self.compute_nan_ratios(t_path, loading_tool)
 
         ser_classifier = SerializableClassifier(
             clas_tool.classifier,
@@ -279,6 +286,45 @@ class CiscoRunner():
 
         return ser_classifier
 
+    def evaluate_predictions(self, predictions_output, eval_output, agg_by=None, relaxed=False):
+        eval_tool = EvaluationTool(legit=0)
+        os.makedirs(eval_output)
+        eval_output = os.path.join(eval_output, 'eval')
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 1500000,
+            'bin_samples': 50000,
+            'seed': 0,
+            'nan_value': None
+        }
+        loading_tool = LoadingTool(sampling_settings)
+
+        if agg_by:
+            stats = defaultdict(lambda: defaultdict(set))
+        else:
+            stats = defaultdict(lambda: defaultdict(int))
+
+        self.__write(eval_output, 'Begin evaluation')
+        for chunk in loading_tool.load_classifications(
+                predictions_output, ';', True):
+            if agg_by:
+                chunk_stats = eval_tool.compute_stats_for_agg(
+                    agg_by, chunk, relaxed)
+                for k, v in chunk_stats.items():
+                    stats[k]['FP'] = stats[k]['FP'] | v['FP']
+                    stats[k]['FN'] = stats[k]['FN'] | v['FN']
+                    stats[k]['TP'] = stats[k]['TP'] | v['TP']
+            else:
+                chunk_stats = eval_tool.compute_stats(chunk)
+                for label in chunk_stats:
+                    stats[label]['FP'] += chunk_stats[label]['FP']
+                    stats[label]['FN'] += chunk_stats[label]['FN']
+                    stats[label]['TP'] += chunk_stats[label]['TP']
+        if agg_by:
+            stats = eval_tool.aggregate_stats(stats)
+
+        self.__write_stats(eval_output, eval_tool, stats)
+
     def get_correlation_matrix(self, path, output_dir):
         def get_redundant_pairs(df):
             '''Get diagonal and lower triangular pairs of correlation matrix'''
@@ -314,6 +360,30 @@ class CiscoRunner():
         with open(norm_path, 'w') as f:
             f.write(str(norm))
 
+       
+        cond_probs = self.get_cond_prob_matrix(dataset=data)
+        conditions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        conditioned_pairs = []
+
+        for i in range(len(conditions)):
+            condition = corr_matrix.values >= conditions[i]
+            pairs = np.column_stack(np.where(condition))
+            probs = np.zeros((len(pairs), 1))
+            for j in range(len(pairs)):
+                probs[j] = cond_probs.loc[pairs[j][1]], pairs[j][0]]
+            conditioned_pairs.append(np.append(pairs, probs, axis=1))
+
+        for i in range(len(conditioned_pairs)):
+            for cond in conditions:
+                pairs = pd.DataFrame(conditioned_pairs[i])
+                if not(pairs[pairs[2] > cond].empty):
+                    print(pairs[pairs[2] > cond])
+
+        conditioned_pairs_path = os.path.join(output_dir, 'conditioned_pairs')
+        with open(conditioned_pairs_path, 'w') as f:
+            for condition, count, in zip(conditions, counts):
+                f.write(str(condition) + ': ' + str(count))
+
         top_20_path = os.path.join(output_dir, 'top_20')
         top_20_correlated = get_top_correlations(corr_matrix, 20)
         top_20_correlated.to_csv(top_20_path, sep='\t', encoding='utf-8')
@@ -324,6 +394,7 @@ class CiscoRunner():
         ax = fig.add_subplot(111)
         ax.matshow(corr_matrix)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
+        return conditioned_pairs
 
     def get_missingness_correlation_matrix(self, path, output_dir):
         def get_redundant_pairs(df):
@@ -372,8 +443,9 @@ class CiscoRunner():
         ax = fig.add_subplot(111)
         ax.matshow(corr_matrix)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
+        return corr_matrix
 
-    def get_cond_prob_matrix(self, path, output_dir):
+    def get_cond_prob_matrix(self, path='', output_dir='', dataset=None):
         def get_conditional_probabilities(column, df):
             result = np.ndarray((51,))
             for col in df.columns:
@@ -404,12 +476,18 @@ class CiscoRunner():
             'seed': 0,
             'nan_value': None,
         }
-        loading_tool = LoadingTool(sampling_settings)
-        data = loading_tool.load_training_data(path)[0]
-        data[~pd.isnull(data)] = 1
-        data[pd.isnull(data)] = 0
+        if not dataset:
+            loading_tool = LoadingTool(sampling_settings)
+            data = loading_tool.load_training_data(path)[0]
+            data[~pd.isnull(data)] = 1
+            data[pd.isnull(data)] = 0
+        else:
+            data = dataset
+
         matrix = data.apply(get_conditional_probabilities, axis=0, df=data)
         matrix = matrix.transpose()
+        if dataset:
+            return matrix
         cond_path = os.path.join(output_dir, 'cond_missingness')
         matrix.to_csv(cond_path, sep='\t', encoding='utf-8')
 
@@ -428,6 +506,8 @@ out_corr = os.path.join('corr_outputs', out_dir)
 out_corr_missingness = os.path.join('corr_missingness_outputs', out_dir)
 out_cond_prob = os.path.join('cond_prob_outputs', out_dir)
 out_dir_unagg = os.path.join('runner_outputs', out_dir, 'unaggregated')
+out_dir_unagg_mean = os.path.join('runner_outputs', out_dir, 'unagg_mean')
+out_dir_unagg_median = os.path.join('runner_outputs', out_dir, 'unagg_median')
 out_dir_agg_by_u = os.path.join('runner_outputs', out_dir, 'agg_by_user')
 out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 out_dir_otfi = os.path.join('runner_outputs', out_dir, 'otfi')
@@ -441,9 +521,9 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 # )
 
 # COND PROB
-runner.get_cond_prob_matrix(
-   'classification_tool/datasets/cisco_datasets/data/test_tr', out_cond_prob
-)
+# runner.get_cond_prob_matrix(
+#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_cond_prob
+# )
 
 # CORR MISINGNESS
 # runner.get_missingness_correlation_matrix(
@@ -452,10 +532,9 @@ runner.get_cond_prob_matrix(
 
 # OTFI
 # runner.execute_run(
-#     classifier=RF, agg_by=None, relaxed=False, dump=False, output_dir=out_dir_otfi,
-#     nan_value=None, n_estimators=10, method='otfi'
+#     classifier=RF, agg_by=None, relaxed=False, dump=True, output_dir=out_dir_otfi,
+#     nan_value=None, n_estimators=100, method='otfi'
 # )
-
 
 # MIA
 # runner.execute_run(
@@ -464,10 +543,15 @@ runner.get_cond_prob_matrix(
 # )
 
 # UNAG RFC
-# clsfr = runner.execute_run(
+# runner.execute_run(
 #     classifier=RF, agg_by=None, relaxed=False,
-#     dump=False, output_dir=out_dir_unagg, nan_value=-1000000,
-#     n_estimators=4
+#     dump=True, output_dir=out_dir_unagg_mean, nan_value='mean',
+#     n_estimators=100
+# )
+# runner.execute_run(
+#     classifier=RF, agg_by=None, relaxed=False,
+#     dump=True, output_dir=out_dir_unagg_median, nan_value='median',
+#     n_estimators=100
 # )
 
 # UNAG RFC_scikit
@@ -485,3 +569,18 @@ runner.get_cond_prob_matrix(
 #      par_classifier=clsfr, agg_by='user', relaxed=True,
 #      dump=True, output_dir=out_dir_agg_by_u_r, nan_value='median'
 # )
+#runner.evaluate_predictions(predictions_output='runner_outputs/otfi/unag/clas', eval_output='runner_outputs/otfi/agg_by_user', agg_by='user', relaxed=False)
+#runner.evaluate_predictions(predictions_output='runner_outputs/otfi/unag/clas', eval_output='runner_outputs/otfi/agg_by_user_relaxed', agg_by='user', relaxed=True)
+#runner.evaluate_predictions(predictions_output='runner_outputs/mia/unag/clas', eval_output='runner_outputs/mia/agg_by_user', agg_by='user', relaxed=False)
+#runner.evaluate_predictions(predictions_output='runner_outputs/mia/unag/clas', eval_output='runner_outputs/mia/agg_by_user_relaxed', agg_by='user', relaxed=True)
+#runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user', agg_by='user', relaxed=False)
+#runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user_relaxed', agg_by='user', relaxed=True)
+sampling_settings = {
+    'bin_count': 16,
+    'neg_samples': 10000,
+    'bin_samples': 1000,
+    'seed': 0,
+    'nan_value': None,
+}
+loading_tool = LoadingTool(sampling_settings)
+runner.compute_nan_ratios('classification_tool/datasets/cisco_datasets/data/test_t', loading_tool, output='runner_outputs/nan_ratios')

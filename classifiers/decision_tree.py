@@ -1,3 +1,4 @@
+import os
 from collections import Counter, defaultdict
 import numpy as np
 import pandas as pd
@@ -64,13 +65,20 @@ class DecisionTree():
         self.random_state = np.random.RandomState(random_state)
         self.method = method
 
-    def fit(self, feature_matrix, labels):
+    def fit(self, feature_matrix, labels, count):
         if self.method == 'otfi':
             self.root = self.__build_tree_otfi(feature_matrix, labels)
         elif self.method == 'mia':
             self.root = self.__build_tree_mia(feature_matrix, labels)
         else:
-            self.root = self.__build_tree(feature_matrix, labels)
+            self.root = self.__build_tree(feature_matrix, labels) 
+        from utils.utils import tee
+        grow_dir = 'am_growing'
+        output = os.path.join(grow_dir, 'growing')
+        text = 'Tree ' + str(count) + ' grown'
+        with open(output, 'a', encoding='utf-8') as f:
+            tee(text, f)
+
 
     def predict(self, observations):
         return [self.root.evaluate(row, self.method) for row in observations.itertuples(False)]

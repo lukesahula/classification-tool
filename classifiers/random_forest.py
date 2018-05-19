@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from joblib import Parallel, delayed
 from classifiers.decision_tree import DecisionTree
@@ -19,11 +20,12 @@ class RandomForest():
         self.feature_matrix = None
         self.labels = None
         self.trained = False
+        self.predicted = 0
 
     def init_tree(self, seed, count):
         indices = self.sample_dataset(seed)
         tree = DecisionTree(self.max_features, self.min_samples_split, seed, method=self.method)
-        tree.fit(self.feature_matrix.loc[indices], self.labels[indices])
+        tree.fit(self.feature_matrix.loc[indices], self.labels[indices], count)
         print('tree ' + str(count) + ' grown')
         return tree
 
@@ -44,6 +46,13 @@ class RandomForest():
 
     def predict(self, observations, parallel):
         ind_predictions = parallel(delayed(tree.predict)(observations) for tree in self.estimators_)
+        from utils.utils import tee
+        self.predicted += 1
+        grow_dir = 'am_growing'
+        output = os.path.join(grow_dir, 'predicting')
+        text = 'File ' + str(self.predicted) + ' predicted'
+        with open(output, 'a', encoding='utf-8') as f:
+            tee(text, f)
         return [self.mode(ind_pred) for ind_pred in zip(*ind_predictions)]
 
     def sample_dataset(self, seed):
