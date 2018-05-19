@@ -49,7 +49,7 @@ class CiscoRunner():
             tee('Relaxed: {}'.format(runner_settings['relaxed']), f)
             tee('NaN value: {}\n'.format(runner_settings['nan_value']), f)
 
-    def compute_nan_ratios(self, path, loading_tool, output):
+    def compute_nan_ratios(self, path, loading_tool):
         nan_counts_total = defaultdict(int)
         class_counts_total = defaultdict(int)
         for t_data in loading_tool.load_testing_data(path, compute_nans=True):
@@ -62,11 +62,6 @@ class CiscoRunner():
             (n, nan_counts_total[n] / class_counts_total[n])
             for n in set(nan_counts_total) | set(class_counts_total)
         )
-        output_file = os.path.join(output, 'nan_ratios')
-        os.makedirs(output)
-        with open(output_file, 'w', encoding='utf-8') as f:
-            for key, value in nan_ratios.items():
-                f.write(str(key) + ': ' + str(value) + '\n')
         return nan_ratios
 
     def __write(self, output, text):
@@ -287,14 +282,7 @@ class CiscoRunner():
         eval_tool = EvaluationTool(legit=0)
         os.makedirs(eval_output)
         eval_output = os.path.join(eval_output, 'eval')
-        sampling_settings = {
-            'bin_count': 16,
-            'neg_samples': 1500000,
-            'bin_samples': 50000,
-            'seed': 0,
-            'nan_value': None
-        }
-        loading_tool = LoadingTool(sampling_settings)
+        loading_tool = LoadingTool(nan_value=None)
 
         if agg_by:
             stats = defaultdict(lambda: defaultdict(set))
@@ -322,69 +310,16 @@ class CiscoRunner():
 
         self.__write_stats(eval_output, eval_tool, stats)
 
-    def get_correlation_matrix(self, path, output_dir):
-        def get_redundant_pairs(df):
-            '''Get diagonal and lower triangular pairs of correlation matrix'''
-            pairs_to_drop = set()
-            cols = df.columns
-            for i in range(0, df.shape[1]):
-                for j in range(0, i+1):
-                    pairs_to_drop.add((cols[i], cols[j]))
-            return pairs_to_drop
-
-        def get_top_correlations(df, n=5, ascending=False):
-            au_corr = df.corr().unstack()
-            labels_to_drop = get_redundant_pairs(df)
-            au_corr = au_corr.drop(labels=labels_to_drop).sort_values(ascending=ascending)
-            return au_corr[0:n]
-
-        os.makedirs(output_dir)
-        eval_tool = EvaluationTool()
-        sampling_settings = {
-            'bin_count': 16,
-            'neg_samples': 10000,
-            'bin_samples': 1000,
-            'seed': 0,
-            'nan_value': None,
-        }
-        loading_tool = LoadingTool(sampling_settings)
-        data = loading_tool.load_training_data(path)[0]
-        corr_matrix = data.corr().fillna(0)
-        corr_path = os.path.join(output_dir, 'corr')
-        corr_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
+    def write_norm(self, output_dir, corr_matrix):
         norm = np.linalg.norm(corr_matrix)
         norm_path = os.path.join(output_dir, 'norm')
         with open(norm_path, 'w') as f:
             f.write(str(norm))
 
-       
-        cond_probs = self.get_cond_prob_matrix(dataset=data)
-        conditions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        conditioned_pairs = []
-
-        for i in range(len(conditions)):
-            condition = corr_matrix.values >= conditions[i]
-            pairs = np.column_stack(np.where(condition))
-            probs = np.zeros((len(pairs), 1))
-            for j in range(len(pairs)):
-                probs[j] = cond_probs.loc[pairs[j][1]], pairs[j][0]]
-            conditioned_pairs.append(np.append(pairs, probs, axis=1))
-
-        for i in range(len(conditioned_pairs)):
-            for cond in conditions:
-                pairs = pd.DataFrame(conditioned_pairs[i])
-                if not(pairs[pairs[2] > cond].empty):
-                    print(pairs[pairs[2] > cond])
-
-        conditioned_pairs_path = os.path.join(output_dir, 'conditioned_pairs')
-        with open(conditioned_pairs_path, 'w') as f:
-            for condition, count, in zip(conditions, counts):
-                f.write(str(condition) + ': ' + str(count))
-
-        top_20_path = os.path.join(output_dir, 'top_20')
-        top_20_correlated = get_top_correlations(corr_matrix, 20)
-        top_20_correlated.to_csv(top_20_path, sep='\t', encoding='utf-8')
-
+    def write_correlation_matrix(self, output_dir, corr_matrix, missingess=False):
+        filename = 'missingness' if missingess else 'corr'
+        corr_path = os.path.join(output_dir, filename)
+        corr_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
         s = corr_matrix.unstack()
         so = s.sort_values(kind="quicksort")
         fig = plt.figure(figsize=(10, 10))
@@ -392,112 +327,101 @@ class CiscoRunner():
         cax = ax.matshow(corr_matrix)
         fig.colorbar(cax)
         fig.savefig(os.path.join(output_dir, 'heatmap'))
-        return conditioned_pairs
 
-    def get_missingness_correlation_matrix(self, path, output_dir):
-        def get_redundant_pairs(df):
-            '''Get diagonal and lower triangular pairs of correlation matrix'''
-            pairs_to_drop = set()
-            cols = df.columns
-            for i in range(0, df.shape[1]):
-                for j in range(0, i+1):
-                    pairs_to_drop.add((cols[i], cols[j]))
-            return pairs_to_drop
+    def write_cond_prob_matrix(self, output_dir, cond_prob_matrix):
+        filename = 'cond_prob'
+        cond_prob_path = os.path.join(output_dir, filename)
+        cond_prob_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
+        s = cond_prob_matrix.unstack()
+        so = s.sort_values(kind="quicksort")
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(cond_prob_matrix)
+        fig.colorbar(cax)
+        fig.savefig(os.path.join(output_dir, 'heatmap'))
 
-        def get_top_correlations(df, n=5, ascending=False):
-            au_corr = df.corr().unstack()
-            labels_to_drop = get_redundant_pairs(df)
-            au_corr = au_corr.drop(labels=labels_to_drop).sort_values(ascending=ascending)
-            return au_corr[0:n]
+    def write_nan_ratios(self, nan_ratios, output):
+        output_file = os.path.join(output, 'nan_ratios')
+        os.makedirs(output)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for key, value in nan_ratios.items():
+                f.write(str(key) + ': ' + str(value) + '\n')
 
+    def get_correlation_matrix(self, path, output_dir, missingness=False):
+        eval_tool = EvaluationTool(legit=0)
+        loading_tool = LoadingTool(nan_value=None)
         os.makedirs(output_dir)
-        eval_tool = EvaluationTool()
+        data = loading_tool.load_training_data(path)[0]
+        if missingness:
+            corr_matrix = eval_tool.compute_missingness_matrix(data)
+        else:
+            corr_matrix = eval_tool.compute_correlated_matrix(data)
+        self.write_norm(output_dir, corr_matrix)
+        self.write_correlation_matrix(output_dir, corr_matrix, missingness)
+
+    def get_cond_prob_matrix(self, path, output_dir):
+        eval_tool = EvaluationTool(legit=0)
+        loading_tool = LoadingTool(nan_value=None)
+        os.makedirs(output_dir)
+        data = loading_tool.load_training_data(path)[0]
+        cond_prob_matrix = eval_tool.compute_cond_prob_matrix(loading_tool.load_training_data(data))
+        self.write_cond_prob_matrix(output_dir, cond_prob_matrix)
+
+    def get_nan_ratios(self, path, output_dir):
+        loading_tool = LoadingTool(nan_value=None)
+        nan_ratios = self.compute_nan_ratios(path, loading_tool)
+        self.write_nan_ratios(nan_ratios, output)
+
+    def process_correlated_pairs(self, correlated_pairs_matrix, nan_ratios):
+        paired_matrices = []
+        columns = ['feature', 'missingness', 'replacable by']
+        for corr_cond in correlated_pairs_matrix:
+            cond_matrices = []
+            for prob_cond in corr_cond:
+                labels_with_miss_replaced_prob = []
+                for label in nan_ratios.keys():
+                    miss_replaced_prob = []
+                    miss_replaced_prob.append(label)
+                    miss_replaced_prob.append(nan_ratios[label])
+                    label_prob_pairs = []
+                    labels = prob_cond[prob_cond[0] == label][1].values
+                    probs = prob_cond[prob_cond[0] == label][2].values
+                    replacable_by_missingness = []
+                    for l, p in zip(labels, probs):
+                        replacable_by_missingness.append((l, p))
+                    miss_replaced_prob.append(replacable_by_missingness)
+                    import pdb; pdb.set_trace()
+                    labels_with_miss_replaced_prob.append(miss_replaced_prob)
+                paired_matrix = pd.DataFrame(data=labels_with_miss_replaced_prob, columns=columns)
+                cond_matrices.append(paired_matrix)
+            paired_matrices.append(cond_matrices)
+        return paired_matrices
+
+    def get_correlated_missingness(self, path, output_dir):
+        eval_tool = EvaluationTool(legit=0)
+        os.makedirs(output_dir)
         sampling_settings = {
             'bin_count': 16,
-            'neg_samples': 10000,
-            'bin_samples': 1000,
+            'neg_samples': 50000,
+            'bin_samples': 10000,
             'seed': 0,
-            'nan_value': None,
+            'nan_value': None
         }
         loading_tool = LoadingTool(sampling_settings)
         data = loading_tool.load_training_data(path)[0]
-        data[~pd.isnull(data)] = 1
-        data[pd.isnull(data)] = 0
-        corr_matrix = data.corr().fillna(0)
-        corr_path = os.path.join(output_dir, 'corr_missingness')
-        corr_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
-        norm = np.linalg.norm(corr_matrix)
-        norm_path = os.path.join(output_dir, 'norm_missingness')
-        with open(norm_path, 'w') as f:
-            f.write(str(norm))
+        nan_ratios = self.compute_nan_ratios(path, loading_tool)
+        correlated_pairs_matrix = eval_tool.compute_correlated_pairs(data)
+        paired_matrices = self.process_correlated_pairs(correlated_pairs_matrix, nan_ratios)
 
-        top_20_path = os.path.join(output_dir, 'top_20')
-        top_20_correlated = get_top_correlations(corr_matrix, 20)
-        top_20_correlated.to_csv(top_20_path, sep='\t', encoding='utf-8')
+        output_dirs = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
+        output_paths = [os.path.join(output_dir, path) for output_dir in output_dirs]
+        for directory in output_dirs:
+            os.makedirs(os.path.join(output_dir, directory))
 
-        s = corr_matrix.unstack()
-        so = s.sort_values(kind="quicksort")
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(111)
-        cax = ax.matshow(corr_matrix)
-        fig.colorbar(cax)
-        fig.savefig(os.path.join(output_dir, 'heatmap'))
-        return corr_matrix
-
-    def get_cond_prob_matrix(self, path='', output_dir='', dataset=None):
-        def get_conditional_probabilities(column, df):
-            result = np.ndarray((51,))
-            for col in df.columns:
-                if column.nunique() == 1:
-                    if column.unique() == 0:
-                        result.fill(0)
-                    else:
-                        result.fill(1)
-                    result[column.name] = 0
-                    break
-                elif col == column.name:
-                    result[col] = 0
-                else:
-                    probs = df.groupby(col).size().div(len(df))
-                    cond_probs = df.groupby(
-                        [column.name, col]).size().div(len(df)).div(probs, axis=0, level=col)[1]
-                    if 0 in cond_probs:
-                        result[col] = cond_probs[0]
-                    else:
-                        result[col] = 0
-            return pd.Series(result)
-
-        os.makedirs(output_dir)
-        eval_tool = EvaluationTool()
-        sampling_settings = {
-            'bin_count': 16,
-            'neg_samples': 10000,
-            'bin_samples': 1000,
-            'seed': 0,
-            'nan_value': None,
-        }
-        if not dataset:
-            loading_tool = LoadingTool(sampling_settings)
-            data = loading_tool.load_training_data(path)[0]
-            data[~pd.isnull(data)] = 1
-            data[pd.isnull(data)] = 0
-        else:
-            data = dataset
-
-        matrix = data.apply(get_conditional_probabilities, axis=0, df=data)
-        matrix = matrix.transpose()
-        if dataset:
-            return matrix
-        cond_path = os.path.join(output_dir, 'cond_missingness')
-        matrix.to_csv(cond_path, sep='\t', encoding='utf-8')
-
-        s = matrix.unstack()
-        so = s.sort_values(kind="quicksort")
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(111)
-        cax = ax.matshow(matrix)
-        fig.colorbar(cax)
-        fig.savefig(os.path.join(output_dir, 'heatmap'))
+        for cond, directory in zip(paired_matrices, output_paths):
+            for matrix, prob in zip(cond, output_dirs):
+                matrix_path = os.path.join(directory, prob)
+                matrix.to_csv(matrix_path, sep='\t', encoding='utf-8')
 
 
 runner = CiscoRunner()
@@ -514,6 +438,7 @@ out_dir_agg_by_u_r = os.path.join('runner_outputs', out_dir, 'agg_by_user_rel')
 out_dir_otfi = os.path.join('runner_outputs', out_dir, 'otfi')
 out_dir_mia = os.path.join('runner_outputs', out_dir, 'mia')
 clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
+out_dir_correlated_matrices = os.path.join('runner_outputs', out_dir, 'holy_shit')
 
 
 # CORR
@@ -576,12 +501,4 @@ clsfr_path = os.path.join('runner_outputs', 'custom', 'unaggregated', 'clsfr')
 #runner.evaluate_predictions(predictions_output='runner_outputs/mia/unag/clas', eval_output='runner_outputs/mia/agg_by_user_relaxed', agg_by='user', relaxed=True)
 #runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user', agg_by='user', relaxed=False)
 #runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user_relaxed', agg_by='user', relaxed=True)
-sampling_settings = {
-    'bin_count': 16,
-    'neg_samples': 10000,
-    'bin_samples': 1000,
-    'seed': 0,
-    'nan_value': None,
-}
-loading_tool = LoadingTool(sampling_settings)
-runner.compute_nan_ratios('classification_tool/datasets/cisco_datasets/data/test_t', loading_tool, output='runner_outputs/nan_ratios')
+runner.get_correlated_missingness('classification_tool/datasets/cisco_datasets/data/test_tr', out_dir_correlated_matrices)

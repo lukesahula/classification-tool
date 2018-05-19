@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from sklearn.metrics import confusion_matrix
 
+import pandas as pd
 import numpy as np
 import scipy as sp
 
@@ -197,3 +198,83 @@ class EvaluationTool():
         :return: A list of labels.
         """
         return [l for l in labels if self.compute_precision(l, stats) >= thres]
+
+    def get_redundant_pairs(df):
+        '''Get diagonal and lower triangular pairs of correlation matrix'''
+        pairs_to_drop = set()
+        cols = df.columns
+        for i in range(0, df.shape[1]):
+            for j in range(0, i+1):
+                pairs_to_drop.add((cols[i], cols[j]))
+        return pairs_to_drop
+
+    def get_top_correlations(df, n=5, ascending=False):
+        au_corr = df.corr().unstack()
+        labels_to_drop = get_redundant_pairs(df)
+        au_corr = au_corr.drop(labels=labels_to_drop).sort_values(ascending=ascending)
+        return au_corr[0:n]
+
+    def compute_correlated_pairs(self, data):
+        cond_probs = self.compute_cond_prob_matrix(data)
+        corr_matrix = self.compute_correlation_matrix(data)
+        conditions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        conditioned_pairs = []
+
+        for i in range(len(conditions)):
+            condition = corr_matrix.values >= conditions[i]
+            pairs = np.column_stack(np.where(condition))
+            probs = np.zeros((len(pairs), 1))
+            for j in range(len(pairs)):
+                probs[j] = cond_probs.loc[pairs[j][1], pairs[j][0]]
+
+            conditioned_pairs.append(np.append(pairs, probs, axis=1))
+
+        correlated_pairs_matrix = []
+        for i in range(len(conditioned_pairs)):
+            correlated_pairs = []
+            for cond in conditions:
+                pairs = pd.DataFrame(conditioned_pairs[i])
+                correlated_pairs.append(pairs[pairs[2] > cond])
+            correlated_pairs_matrix.append(correlated_pairs)
+
+        return correlated_pairs_matrix
+
+    def compute_correlation_matrix(self, data):
+        corr_matrix = data.corr().fillna(0)
+        return corr_matrix
+
+    def compute_missingness_matrix(self, data):
+        data[~pd.isnull(data)] = 1
+        data[pd.isnull(data)] = 0
+        corr_matrix = data.corr().fillna(0)
+        return corr_matrix
+
+    def compute_cond_prob_matrix(self, data):
+        def compute_conditional_probabilities(column, df):
+            result = np.ndarray((51,))
+            for col in df.columns:
+                if column.nunique() == 1:
+                    if column.unique() == 0:
+                        result.fill(0)
+                    else:
+                        result.fill(1)
+                    result[column.name] = 0
+                    break
+                elif col == column.name:
+                    result[col] = 0
+                else:
+                    probs = df.groupby(col).size().div(len(df))
+                    cond_probs = df.groupby(
+                        [column.name, col]).size().div(len(df)).div(probs, axis=0, level=col)[1]
+                    if 0 in cond_probs:
+                        result[col] = cond_probs[0]
+                    else:
+                        result[col] = 0
+            return pd.Series(result)
+
+        data[~pd.isnull(data)] = 1
+        data[pd.isnull(data)] = 0
+
+        matrix = data.apply(compute_conditional_probabilities, axis=0, df=data)
+        matrix = matrix.transpose()
+        return matrix

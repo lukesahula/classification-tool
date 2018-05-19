@@ -7,7 +7,7 @@ from collections import defaultdict
 
 
 class LoadingTool():
-    def __init__(self, sampling_settings=None, bins=None):
+    def __init__(self, sampling_settings=None, bins=None, nan_value=None):
         self.bins = bins
         if sampling_settings:
             self.bin_count = sampling_settings['bin_count']
@@ -15,6 +15,8 @@ class LoadingTool():
             self.neg_samples = sampling_settings['neg_samples']
             self.seed = np.random.RandomState(sampling_settings['seed'])
             self.nan_value = sampling_settings['nan_value']
+        else:
+            self.nan_value = nan_value
 
         self.means = None
         self.medians = None
