@@ -270,16 +270,19 @@
         \\~\\
         This algorithm is in practice an extension of the method that was used as a baseline. The baseline in fact does the same thing as split A in here. It follows that this method takes approximately three times more time than the baseline.
       \subsubsection{Other algorithms}
-        Other notable imputation algorithms were also considered, such as {\it surrogate splits}\cite{splits} or {\it missForest}\cite{otfi}. However, surrogate splits perform less reliably as the amount of missing data increases\cite{splits} and are slow when used with larger datasets.\cite{rsf} The low computational speed is a problem for missForest as well, making it "100's of times" slower than methods like OTFI or MIA.\cite{otfi}
+        Other notable imputation algorithms were also considered, such as {\it surrogate splits}\cite{splits} or {\it missForest}\cite{otfi}. However, surrogate splits perform less reliably as the amount of missing data increases\cite{splits} and are slow when used with larger datasets.\cite{rsf} The low computational speed is a problem for missForest as well, making it "100's of times" slower than methods like OTFI or MIA.\cite{otfi} Since the network traffic dataset is relatively very big and a big portion of its data is missing [\ref{sec:datadesc}], these methods are not very relevant and they are not in the scope of this thesis.
+  \newpage
   \section{Network dataset}
+    \label{sec:datadesc}
     This chapter centers on the network datasets used for malware classification. The following subsections provide a description of the dataset as well as an analysis done to gather more information on the correlation among pairs of features. The last part of this chapter tries to answer why most of the studied algorithms do not provide satisfying results.
     \subsection{Dataset description}
-      The data comes from network traffic of more than a hundred large enterprises taken on five days of early 2017. The dataset contains roughly 600 million of individual records. Out of these, only 4 million are labeled as positive, making the dataset heavily imbalanced. Imbalanced dataset means that "at least one of the classes constitutes only a very small minority of the data."\cite{imbalanced} In this case, each of the positive classes are a minority while the negative class is an overwhelming (more than 99\%) majority.
+      The data comes from network traffic of more than a hundred large enterprises taken on five days of early 2017. The dataset contains roughly 600 million of individual records. Out of these, only 4 million are labeled as positive, making the dataset heavily imbalanced. Imbalanced dataset means that "at least one of the classes constitutes only a very small minority of the data."\cite{imbalanced} In this case, each of the positive classes are a minority while the negative class is an overwhelming (more than 99\%) majority. Because of this reason, a random sampling of the negative objects was done in order to deal with this issue. Out of all the negative objects, only 1.5 million of objects was sampled to make the proportion between classes more balanced.
       \\~\\
       Each object in the dataset consists of 55 columns. The first column represents the class to which the object belongs. The next 3 columns contain metadata information of the object and are not used for training and prediction. Those are the timestamp, user and host and they are used in aggregated evaluation of the classifier, described later in chapter [\ref{sec:experiments}]. The remaining 51 columns are the features. Because of the sensitivity of the data, the features themselves are not represented by their names and their values are encrypted, turning them into integers and real numbers. However, some examples of the features could be the number of bytes transmitted or received, duration of the network event, direction of the packet, the amount of incoming and outgoing packets, the IP address of the destination, etc.
       \\~\\
       An important thing that needs to be taken into consideration when working with a dataset like this is the fact that the samples are taken from various days. This could potentially mean that a classifier can perform better on data taken from the same day or from the day after, but worse with data from the next month, or even a year. The samples analysed in this thesis are from days week apart in January, with one day from the beginning of March. In this small scale, however, no significant differences in performance that could be attributed to this were found.
     \subsection{Analysis}
+        \label{sec:analysis}
         This subchapter examines the dataset and attempts to analyse the nature of missingness of its missing data. The first step of the analysis was to look at the features and see how often and when are they missing. After that, a {\it correlation matrix} was constructed to see the correlation among pairs of the features. Another correlation matrix was constructed from an altered dataset where each value was replaced by 1 and each missing value was replaced by 0 to see the how correlated the features' missingness is. A matrix of conditional probabilities was also created to provide information on how often is one feature not missing when the other one is missing.
       \subsubsection{Missingness}
         In the whole dataset, there are only 4 features that are not missing from any of the objects. 12 features, on the other hand, are missing in more than 90\% of the time. The average missingness throughout the dataset is roughly 51\%. Some features are closely tied together and when one of them is missing, the others are missing as well. Therefore the assumption is that some of the features are not missing at random.[\ref{sec:missmech}] Other features, however, do not fulfill this assumption and could possibly be used when others are missing if they are somehow correlated.
@@ -294,17 +297,42 @@
         \end{equation}
         The closer the correlation is to 1, the stronger the positive linear dependence between the features is and vice versa, the closer the correlation is to -1, the stronger the negative linear dependence between the features is.
         \\~\\
-        Computing this correlation for each existing pair of all the features in the dataset we get a 51 x 51 symmetric matrix with the number 1 on the main diagonal. Every element in this matrix symbolizes the correlation between the feature represented by the element's row, and the feature represented by the element's column. The matrix is symmetric because the pair of features (X, Y) has the same correlation as the pair (Y, X). Furthermore, the main diagonal is full of 1s because a feature is completely correlated with itself. However, in some cases it is impossible to compute the correlation, and that is when the feature is always missing. In this thesis, its correlation value is replaced by 0. With this matrix, it is possible to create a heatmap in order to provide a more visual representation[\ref{figure:correlation_matrix}].
+        Computing this correlation for each existing pair of all the features in the dataset we get a 51 x 51 symmetric matrix with the number 1 on the main diagonal. Every element in this matrix symbolizes the correlation between the feature represented by the element's row, and the feature represented by the element's column. The matrix is symmetric because the pair of features (X, Y) has the same correlation as the pair (Y, X). Furthermore, the main diagonal is full of 1s because a feature is completely correlated with itself. However, in some cases it is impossible to compute the correlation, and that is when the feature is always missing. In this thesis, its correlation value is replaced by 0. With this matrix, it is possible to create a heatmap in order to provide a more visual representation, seen in figure [\ref{figure:correlation_matrix}]. It is possible to see that some pairs of features in fact are highly correlated.
+        \begin{figure}
+          \centering
+          \caption{Correlation matrix showing the amount of correlation among pairs of features.}
+          \label{figure:correlation_matrix}
+          \includegraphics[scale=0.6]{thesis_res/corr/heatmap_cropped.png}
+        \end{figure}
       \subsubsection{Missingness correlation matrix}
+        The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it could show how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random[\ref{sec:missmech}] grows even more likely.
+        \begin{figure}
+          \centering
+          \caption{Correlation matrix showing the amount of correlation among pairs of features based on their being missing or not.}
+          \label{figure:missingness_matrix}
+          \includegraphics[scale=0.6]{thesis_res/corr/heatmap_cropped.png}
+        \end{figure}
+      \newpage
       \subsubsection{Conditional probabilities matrix}
-    \subsection{Why most of the algorithms is not relevant}
-      {\color{red}TODO}
+        The conditional probabilities matrix represents the probability that feature X is not missing when feature Y is missing[\ref{eq:prob}]. This matrix is not symmetric because the probabilities differ for pairs (X, Y) and (Y, X).[\ref{figure:cond_prob_matrix}] The yellow belt at the top symbolizes that the features there are never missing. The belt going from the top to the bottom means the same thing. The probability that the first four features are missing is zero, therefore the conditional probability that other features are not missing when the first four are is also zero.
+        \\~\\
+        Combined with the correlation matrix, it is possible to set a correlation threshold and pick only those pairs of features, that are correlated above that threshold. With this list of pairs it is then possible to look at the conditional probabilities matrix and see how often is one of the features not missing when the other one is. That way, an algorithm could take these highly correlated pairs into account. If there were a feature that is missing everytime another feature is not missing, the algorithm could base the decision on the value of the other feature, for example.
+        \begin{equation}
+          \label{eq:prob}
+          P_{not missing | missing}(X, Y)
+        \end{equation}
+        \begin{figure}
+          \centering
+          \caption{Conditional probabilities matrix, rows represent the not missing feature, columns represent the missing feature.}
+          \label{figure:cond_prob_matrix}
+          \includegraphics[scale=0.6]{thesis_res/cond/heatmap_cropped.png}
+        \end{figure}
   \newpage
   \section{Experiments}
     \label{sec:experiments}
-    This chapter focuses on the experiments done with network data regarding the performance of several imputation methods. The first part describes the measures that were evaluated and why they were used. The second part looks at the results of the experiments and their comparison. All of the experiments were done on the same data, that is the network traffic logged on three days of January 2017, each of them a week after the previous one, was used as the training dataset, whereas the testing dataset was a single day of March of the same year. Each experiment was evaluated in three different ways - {\it unaggregated}, {\it aggregated}, and {\it aggregated relaxed}. Unaggregated means that the performance is evaluated regularly. Aggregated (by one of the metadata column, for example a user) evaluation is done in order to remove duplicities (multiple records marking the same user as a suspect of malware infection) and removes negative records if there is at least one positive one. This makes sense because if a user is infected, the network traffic he produces can be either regular or point to some malware infection. This aggregation removes the "unimportant, clean" data. Going a level further, the aggregated relaxed evaluation clears the differences between different classes of malware and reduces the classification problem into the binary case - infected, or not infected.
+    This chapter focuses on the experiments done with network data regarding the performance of several imputation methods. The first part describes the measures that were evaluated and why they were used. The second part looks at the results of the experiments and their comparison. All of the experiments were done on the same data, that is the network traffic logged on three days of January 2017, each of them a week after the previous one, was used as the training dataset, whereas the testing dataset was a single day of March of the same year. Each experiment was evaluated in three different ways - {\it unaggregated}, {\it aggregated}, and {\it aggregated relaxed}. Unaggregated means that the performance is evaluated regularly. Aggregated (by one of the metadata column, for example a user) evaluation is done in order to remove duplicities (multiple records marking the same user as a suspect of malware infection) and removes negative records if there is at least one positive one. This makes sense because if a user is infected, the network traffic he produces can be either regular or point to some malware infection. This aggregation removes the arguably unimportant, clean data. Going a level further, the aggregated relaxed evaluation clears the differences between different classes of malware and reduces the classification problem into the binary case - infected, or not infected.
     \subsection{Evaluation metrics}
-      There is a plenty of measures that can be used to determine the classifier's performance. The most commonly observed is perhaps the {\it classification error}\cite{brabec}. The problem with classification error is that it does not say much when the dataset is imbalanced, as is the situation with the network data. For example if we had a dataset where there are 10,000 samples and only 1 of them belonged to a positive class, the classifier could classify all samples as negative and it would achieve a classification error of 0.01 \%. In this project we are interested in two different measures, {\it precision} and {\it recall}. In order to compute them, we also need the {\it confusion matrix}.
+      There is a plenty of measures that can be used to determine the classifier's performance. The most commonly observed is perhaps the {\it classification error}\cite{brabec}. The problem with classification error is that it does not say much when the dataset is imbalanced, as is the situation with the network data. For example if we had a dataset where there are 10,000 samples and only 1 of them belonged to a positive class, the classifier could classify all samples as negative and it would achieve a classification error of 0.01\%. In this project we are interested in two different measures, {\it precision} and {\it recall}. In order to compute them, we also need the {\it confusion matrix}.
       \subsubsection{Confusion matrix}
         In binary classification, we can label the two classes as positive and negative. {\it Confusion matrix}\cite{confusion} divides the classification results into the following categories:
         \begin{description}
@@ -353,7 +381,7 @@
                 },
             ]
               \addplot coordinates {
-                (Baseline, 0.6046999288156045) (Mean, 0) (Median, 0) (Otfi, 0.2286460222752374) (Mia, 0.6417303494717684)
+                (Baseline, 0.6046999288156045) (Mean, 0.5877428741952908) (Median, 0) (Otfi, 0.2286460222752374) (Mia, 0.6417303494717684)
               };
               \addplot coordinates {
                 (Baseline, 0.5129532415312706) (Mean, 0) (Median, 0) (Otfi, 0.2010929298915794) (Mia, 0.5563848885786536)
@@ -386,7 +414,7 @@
                 },
             ]
               \addplot coordinates {
-                (Baseline, 0.6100512556192825) (Mean, 0) (Median, 0) (Otfi, 0.23076311507408218) (Mia, 0.6474093791131115)
+                (Baseline, 0.6100512556192825) (Mean, 0.5929441385687005) (Median, 0) (Otfi, 0.23076311507408218) (Mia, 0.6474093791131115)
               };
               \addplot coordinates {
                 (Baseline, 0.5174926507483615) (Mean, 0) (Median, 0) (Otfi, 0.20295490146464956) (Mia, 0.561308648654571)
@@ -421,7 +449,7 @@
                 },
             ]
               \addplot coordinates {
-                (Baseline, 0.6825325929205833) (Mean, 0) (Median, 0) (Otfi, 0.9585544780000337) (Mia, 0.7315725983978161)
+                (Baseline, 0.6825325929205833) (Mean, 0.683700894472073) (Median, 0) (Otfi, 0.9585544780000337) (Mia, 0.7315725983978161)
               };
               \addplot coordinates {
                 (Baseline, 0.5789769260848006) (Mean, 0) (Median, 0) (Otfi, 0.8430434368531597) (Mia, 0.6342787729796651)
@@ -454,7 +482,7 @@
                 },
             ]
               \addplot coordinates {
-                (Baseline, 0.6893579188497893) (Mean, 0) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
+                (Baseline, 0.6893579188497893) (Mean, 0.690749357301682) (Median, 0) (Otfi, 0.9968966571200351) (Mia, 0.7389622206038545)
               };
               \addplot coordinates {
                 (Baseline, 0.5847666953456485) (Mean, 0) (Median, 0) (Otfi, 0.8767651743272862) (Mia, 0.640685629272389)
@@ -627,7 +655,9 @@
         \end{figure}
   \newpage
   \section{Future work}
-  \newpage
+    There are a few possible things to try in the future. Other imputation methods assuredly exist, some of which could fit the requirement of working with big data and heavy missingness. Of those methods that are slower, some like the {\it missForest}\cite{otfi} could be used as well if they are tested on a stronger computer/computers. Technologies like {\it Apache Spark}, {\it Apache Hadoop} or {\it Apache Parquet} could be utilised for example. \cite{spark}\cite{hadoop}\cite{parquet}
+    \\~\\
+    Apart from these methods, the results of the analysis done in [\ref{sec:analysis}] could be used to implement an algorithm taking the correlated pairs of features that are missing when the other is not into consideration.
   \section*{Conclusion}
   \addcontentsline{toc}{section}{Conclusion}
     {\color{red}TODO}
