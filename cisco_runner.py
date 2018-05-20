@@ -64,6 +64,14 @@ class CiscoRunner():
         )
         return nan_ratios
 
+    def compute_nan_ratios_per_feature(self, data):
+        return data.apply(compute_nan_ratio_of_single_feature)
+
+    def compute_nan_ratio_of_single_feature(self, column):
+        total = len(column)
+        nans = total - len(column.dropna())
+        return nans / total
+
     def __write(self, output, text):
         with open(output, 'a', encoding='utf-8') as f:
             tee(text, f)
@@ -331,7 +339,7 @@ class CiscoRunner():
     def write_cond_prob_matrix(self, output_dir, cond_prob_matrix):
         filename = 'cond_prob'
         cond_prob_path = os.path.join(output_dir, filename)
-        cond_prob_matrix.to_csv(corr_path, sep='\t', encoding='utf-8')
+        cond_prob_matrix.to_csv(cond_prob_path, sep='\t', encoding='utf-8')
         s = cond_prob_matrix.unstack()
         so = s.sort_values(kind="quicksort")
         fig = plt.figure(figsize=(10, 10))
@@ -349,22 +357,36 @@ class CiscoRunner():
 
     def get_correlation_matrix(self, path, output_dir, missingness=False):
         eval_tool = EvaluationTool(legit=0)
-        loading_tool = LoadingTool(nan_value=None)
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 50000,
+            'bin_samples': 10000,
+            'seed': 0,
+            'nan_value': None
+        }
+        loading_tool = LoadingTool(sampling_settings)
         os.makedirs(output_dir)
         data = loading_tool.load_training_data(path)[0]
         if missingness:
             corr_matrix = eval_tool.compute_missingness_matrix(data)
         else:
-            corr_matrix = eval_tool.compute_correlated_matrix(data)
+            corr_matrix = eval_tool.compute_correlation_matrix(data)
         self.write_norm(output_dir, corr_matrix)
         self.write_correlation_matrix(output_dir, corr_matrix, missingness)
 
     def get_cond_prob_matrix(self, path, output_dir):
         eval_tool = EvaluationTool(legit=0)
-        loading_tool = LoadingTool(nan_value=None)
+        sampling_settings = {
+            'bin_count': 16,
+            'neg_samples': 50000,
+            'bin_samples': 10000,
+            'seed': 0,
+            'nan_value': None
+        }
+        loading_tool = LoadingTool(sampling_settings)
         os.makedirs(output_dir)
         data = loading_tool.load_training_data(path)[0]
-        cond_prob_matrix = eval_tool.compute_cond_prob_matrix(loading_tool.load_training_data(data))
+        cond_prob_matrix = eval_tool.compute_cond_prob_matrix(data)
         self.write_cond_prob_matrix(output_dir, cond_prob_matrix)
 
     def get_nan_ratios(self, path, output_dir):
@@ -374,23 +396,23 @@ class CiscoRunner():
 
     def process_correlated_pairs(self, correlated_pairs_matrix, nan_ratios):
         paired_matrices = []
-        columns = ['feature', 'missingness', 'replacable by']
+        columns = ['feature', 'missingness', 'replacable by', 'count']
         for corr_cond in correlated_pairs_matrix:
             cond_matrices = []
             for prob_cond in corr_cond:
                 labels_with_miss_replaced_prob = []
-                for label in nan_ratios.keys():
+                for feature, ratio in nan_ratios.iteritems():
                     miss_replaced_prob = []
-                    miss_replaced_prob.append(label)
-                    miss_replaced_prob.append(nan_ratios[label])
+                    miss_replaced_prob.append(feature)
+                    miss_replaced_prob.append(ratio)
                     label_prob_pairs = []
-                    labels = prob_cond[prob_cond[0] == label][1].values
-                    probs = prob_cond[prob_cond[0] == label][2].values
+                    features = prob_cond[prob_cond[0] == feature][1].values
+                    probs = prob_cond[prob_cond[0] == feature][2].values
                     replacable_by_missingness = []
-                    for l, p in zip(labels, probs):
-                        replacable_by_missingness.append((l, p))
+                    for f, p in zip(features, probs):
+                        replacable_by_missingness.append((f, p))
                     miss_replaced_prob.append(replacable_by_missingness)
-                    import pdb; pdb.set_trace()
+                    miss_replaced_prob.append(len(replacable_by_missingness))
                     labels_with_miss_replaced_prob.append(miss_replaced_prob)
                 paired_matrix = pd.DataFrame(data=labels_with_miss_replaced_prob, columns=columns)
                 cond_matrices.append(paired_matrix)
@@ -409,12 +431,12 @@ class CiscoRunner():
         }
         loading_tool = LoadingTool(sampling_settings)
         data = loading_tool.load_training_data(path)[0]
-        nan_ratios = self.compute_nan_ratios(path, loading_tool)
+        nan_ratios = self.compute_nan_ratios_per_feature(data)
         correlated_pairs_matrix = eval_tool.compute_correlated_pairs(data)
         paired_matrices = self.process_correlated_pairs(correlated_pairs_matrix, nan_ratios)
 
         output_dirs = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
-        output_paths = [os.path.join(output_dir, path) for output_dir in output_dirs]
+        output_paths = [os.path.join(output_dir, out_path) for output_path in output_dirs]
         for directory in output_dirs:
             os.makedirs(os.path.join(output_dir, directory))
 
@@ -442,19 +464,19 @@ out_dir_correlated_matrices = os.path.join('runner_outputs', out_dir, 'holy_shit
 
 
 # CORR
-# runner.get_correlation_matrix(
-#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
-# )
+runner.get_correlation_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr
+)
 
 # COND PROB
-# runner.get_cond_prob_matrix(
-#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_cond_prob
-# )
+runner.get_cond_prob_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_cond_prob
+)
 
 # CORR MISINGNESS
-# runner.get_missingness_correlation_matrix(
-#    'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness
-# )
+runner.get_correlation_matrix(
+   'classification_tool/datasets/cisco_datasets/data/test_tr', out_corr_missingness, True
+)
 
 # OTFI
 # runner.execute_run(
@@ -501,4 +523,4 @@ out_dir_correlated_matrices = os.path.join('runner_outputs', out_dir, 'holy_shit
 #runner.evaluate_predictions(predictions_output='runner_outputs/mia/unag/clas', eval_output='runner_outputs/mia/agg_by_user_relaxed', agg_by='user', relaxed=True)
 #runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user', agg_by='user', relaxed=False)
 #runner.evaluate_predictions(predictions_output='runner_outputs/baseline_rf/unag/clas', eval_output='runner_outputs/baseline_rf/agg_by_user_relaxed', agg_by='user', relaxed=True)
-runner.get_correlated_missingness('classification_tool/datasets/cisco_datasets/data/test_tr', out_dir_correlated_matrices)
+#runner.get_correlated_missingness('classification_tool/datasets/cisco_datasets/data/test_tr', out_dir_correlated_matrices)

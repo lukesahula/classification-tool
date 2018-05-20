@@ -232,6 +232,7 @@
       Perhaps the most recent work on this topic is\cite{otfi} which is a continuation of the previous work by one of the same authors. In this paper, multiple approaches to imputation using random forests are discussed in detail and tested on multiple datasets with different attributes. A comparison of their imputation accuracy is made as well. The datasets used in this work are both real and synthetic. However, the missingness is induced manually\cite{otfi} and thus the results of the experiments can be biased.
     \\~\\
     \subsection{Missing data mechanisms}
+      \label{sec:missmech}
       Missing data are usually divided into three categories, depending on the characteristics of their missingness. These categories are also called missing data mechanisms.\cite{lwd} It is important to understand these mechanisms in order to make an educated assumption about the dataset in question. If an assumption is made that the values are missing completely at random while they are missing systematically, an analysis based on this assumption may be biased.
       \begin{itemize}
       \item If the samples with missing data are a random subset of all observed samples, they have a similar distribution. There is no relationship between whether a value is missing and any other value in the data set, be it missing or observed. These values are {\it missing completely at random} (MCAR).\cite{lwd} When a dataset has missing values that are MCAR, it can still be analysed with unbiased results, provided that there are enough observed samples. However, data that are truly MCAR are not encountered often.
@@ -248,7 +249,7 @@
         {\it Strawman imputation}\cite{otfi} is a simple method for handling missing values. It works very fast compared to other methods and its implementation is very simple. The missing values are imputed before the forest is grown by calculating the median of non-missing values in the feature column. An altered variation of strawman imputation uses the mean instead of the median.
       \subsubsection{On-the-fly-imputation}
         \label{sec:otfi}
-        {\it Adaptive tree imputation}\cite{rsf} later named as {\it On-the-fly-imputation}\cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
+        {\it Adaptive tree imputation}\cite{rsf} later named as {\it On-the-fly-imputation}\cite{otfi} (OTFI) is a method of imputing missing data at the time of growing the tree. That is also where its name comes from. It draws a random value from the non-missing in-bag dataset within the current node to impute the missing values. The algorithm works as follows: 
         \begin{enumerate}
         \item First, the best split is calculated as usual, using only non-missing data.
         \item After finding the best split, random values from the non-missing in-bag data within the current node are used to impute the missing values.
@@ -266,19 +267,42 @@
         \item Split C: \{ $X =$ missing \} versus \{ $X =$ not missing \}.
         \end{itemize}
         After finding the best split in each approach separately, the algorithm then chooses which one of them provides a better information gain and then it splits the dataset accordingly. As in the OTFI method, the decision node here remembers which split type it had assigned in order to decide how the testing data should be propagated during prediction.
+        \\~\\
+        This algorithm is in practice an extension of the method that was used as a baseline. The baseline in fact does the same thing as split A in here. It follows that this method takes approximately three times more time than the baseline.
       \subsubsection{Other algorithms}
         Other notable imputation algorithms were also considered, such as {\it surrogate splits}\cite{splits} or {\it missForest}\cite{otfi}. However, surrogate splits perform less reliably as the amount of missing data increases\cite{splits} and are slow when used with larger datasets.\cite{rsf} The low computational speed is a problem for missForest as well, making it "100's of times" slower than methods like OTFI or MIA.\cite{otfi}
   \section{Network dataset}
-    {\color{red}TODO}
+    This chapter centers on the network datasets used for malware classification. The following subsections provide a description of the dataset as well as an analysis done to gather more information on the correlation among pairs of features. The last part of this chapter tries to answer why most of the studied algorithms do not provide satisfying results.
     \subsection{Dataset description}
-      {\color{red}TODO}
-    \subsection{Analysis with correlation}
-      {\color{red}TODO}
+      The data comes from network traffic of more than a hundred large enterprises taken on five days of early 2017. The dataset contains roughly 600 million of individual records. Out of these, only 4 million are labeled as positive, making the dataset heavily imbalanced. Imbalanced dataset means that "at least one of the classes constitutes only a very small minority of the data."\cite{imbalanced} In this case, each of the positive classes are a minority while the negative class is an overwhelming (more than 99\%) majority.
+      \\~\\
+      Each object in the dataset consists of 55 columns. The first column represents the class to which the object belongs. The next 3 columns contain metadata information of the object and are not used for training and prediction. Those are the timestamp, user and host and they are used in aggregated evaluation of the classifier, described later in chapter [\ref{sec:experiments}]. The remaining 51 columns are the features. Because of the sensitivity of the data, the features themselves are not represented by their names and their values are encrypted, turning them into integers and real numbers. However, some examples of the features could be the number of bytes transmitted or received, duration of the network event, direction of the packet, the amount of incoming and outgoing packets, the IP address of the destination, etc.
+      \\~\\
+      An important thing that needs to be taken into consideration when working with a dataset like this is the fact that the samples are taken from various days. This could potentially mean that a classifier can perform better on data taken from the same day or from the day after, but worse with data from the next month, or even a year. The samples analysed in this thesis are from days week apart in January, with one day from the beginning of March. In this small scale, however, no significant differences in performance that could be attributed to this were found.
+    \subsection{Analysis}
+        This subchapter examines the dataset and attempts to analyse the nature of missingness of its missing data. The first step of the analysis was to look at the features and see how often and when are they missing. After that, a {\it correlation matrix} was constructed to see the correlation among pairs of the features. Another correlation matrix was constructed from an altered dataset where each value was replaced by 1 and each missing value was replaced by 0 to see the how correlated the features' missingness is. A matrix of conditional probabilities was also created to provide information on how often is one feature not missing when the other one is missing.
+      \subsubsection{Missingness}
+        In the whole dataset, there are only 4 features that are not missing from any of the objects. 12 features, on the other hand, are missing in more than 90\% of the time. The average missingness throughout the dataset is roughly 51\%. Some features are closely tied together and when one of them is missing, the others are missing as well. Therefore the assumption is that some of the features are not missing at random.[\ref{sec:missmech}] Other features, however, do not fulfill this assumption and could possibly be used when others are missing if they are somehow correlated.
+      \subsubsection{Correlation matrix}
+        The second step in this analysis was to figure out how are the features correlated to each other. For that, the {\it Pearson correlation coefficient} was used, defined as: \cite{correlation}
+        \begin{equation}
+          \rho_{X, Y} = \frac{cov(X, Y)}{\sigma_X \sigma_Y}
+        \end{equation}
+        In this equation $X$ and $Y$ are features and the result is the amount of correlation between them. Correlation is bound between -1 and 1: \cite{correlation}
+        \begin{equation}
+          -1 \leq \rho_{X, Y} \leq 1
+        \end{equation}
+        The closer the correlation is to 1, the stronger the positive linear dependence between the features is and vice versa, the closer the correlation is to -1, the stronger the negative linear dependence between the features is.
+        \\~\\
+        Computing this correlation for each existing pair of all the features in the dataset we get a 51 x 51 symmetric matrix with the number 1 on the main diagonal. Every element in this matrix symbolizes the correlation between the feature represented by the element's row, and the feature represented by the element's column. The matrix is symmetric because the pair of features (X, Y) has the same correlation as the pair (Y, X). Furthermore, the main diagonal is full of 1s because a feature is completely correlated with itself. However, in some cases it is impossible to compute the correlation, and that is when the feature is always missing. In this thesis, its correlation value is replaced by 0. With this matrix, it is possible to create a heatmap in order to provide a more visual representation[\ref{figure:correlation_matrix}].
+      \subsubsection{Missingness correlation matrix}
+      \subsubsection{Conditional probabilities matrix}
     \subsection{Why most of the algorithms is not relevant}
       {\color{red}TODO}
   \newpage
   \section{Experiments}
-    This chapter focuses on the experiments done with network data regarding the performance of several imputation methods. The first part describes the measures that were evaluated and why they were used. The second part looks at the results of the experiments and their comparison. All of the experiments were done on the same data, that is the network traffic logged on three days of January 2017, each of them a week after the previous one, was used as the training dataset, whereas the testing dataset was a single day of March of the same year. Each experiment was evaluated in three different ways - {\it unaggregated}, {\it aggregated}, and {\it aggregated relaxed}. Unaggregated means that the performance is evaluated regularly. Aggregated (by some metadata column, for example a user) evaluation is done in order to remove duplicities (multiple records marking the same user as a suspect of malware infection) and removes negative records if there is at least one positive one. This makes sense because if a user is infected, the network traffic he produces can be either regular or point to some malware infection. This aggregation removes the "unimportant, clean" data. Going a level further, the aggregated relaxed evaluation clears the differences between different classes of malware and reduces the classification problem into the binary case - infected, or not infected.
+    \label{sec:experiments}
+    This chapter focuses on the experiments done with network data regarding the performance of several imputation methods. The first part describes the measures that were evaluated and why they were used. The second part looks at the results of the experiments and their comparison. All of the experiments were done on the same data, that is the network traffic logged on three days of January 2017, each of them a week after the previous one, was used as the training dataset, whereas the testing dataset was a single day of March of the same year. Each experiment was evaluated in three different ways - {\it unaggregated}, {\it aggregated}, and {\it aggregated relaxed}. Unaggregated means that the performance is evaluated regularly. Aggregated (by one of the metadata column, for example a user) evaluation is done in order to remove duplicities (multiple records marking the same user as a suspect of malware infection) and removes negative records if there is at least one positive one. This makes sense because if a user is infected, the network traffic he produces can be either regular or point to some malware infection. This aggregation removes the "unimportant, clean" data. Going a level further, the aggregated relaxed evaluation clears the differences between different classes of malware and reduces the classification problem into the binary case - infected, or not infected.
     \subsection{Evaluation metrics}
       There is a plenty of measures that can be used to determine the classifier's performance. The most commonly observed is perhaps the {\it classification error}\cite{brabec}. The problem with classification error is that it does not say much when the dataset is imbalanced, as is the situation with the network data. For example if we had a dataset where there are 10,000 samples and only 1 of them belonged to a positive class, the classifier could classify all samples as negative and it would achieve a classification error of 0.01 \%. In this project we are interested in two different measures, {\it precision} and {\it recall}. In order to compute them, we also need the {\it confusion matrix}.
       \subsubsection{Confusion matrix}
@@ -307,7 +331,7 @@
         \end{equation}
         Recall is the fraction of positive objects that the classifier labeled as positive among all truly positive objects. It can be interpreted as the probability that a truly positive object is labeled as positive. A recall score of 1.0 means that every truly positive object is labeled as positive by the classifier. This could be achieved simply by labeling all objects as positive, recall does not say anything about the number of false positives. Recall of every class varies among all classes in multiclass environment.
     \subsection{Results}
-      This subsection presents the results of the individual experiments. The main focus is the average prediction precision, recall and also the number of classes that were predicted with precision above specific thresholds. The following tables will always show all three evaluation approaches for every tested method. The tested methods are the baseline[\ref{sec:baseline}] method, the Strawman[\ref{sec:strawman}] imputation method both with mean and median values, the OTFI[\ref{sec:otfi}] method and the MIA[\ref{sec:mia}] method. The two variations of the Strawman method are further referred to simply as mean and median.
+      This subsection presents the results of the individual experiments. The main focus is the average prediction precision, recall and also the number of classes that were predicted with precision above specific thresholds. The following tables will always show all three evaluation approaches (unaggregated, aggregated, relaxed) for every tested method. The tested methods are the baseline[\ref{sec:baseline}] method, the Strawman[\ref{sec:strawman}] imputation method both with mean and median values, the OTFI[\ref{sec:otfi}] method and the MIA[\ref{sec:mia}] method. The two variations of the Strawman method are further referred to simply as mean and median.
       \subsubsection{Average overall precision}
         The first metric to look at is the overall precision. It is the precision in the form that was declared in at the beginning of this chapter. Looking at figure [\ref{figure:overall_prec}], it can be seen that the OTFI method does not bring any improvement compared to the baseline and its results are actually even weaker.
         \begin{figure}
@@ -601,6 +625,8 @@
             \end{axis}
           \end{tikzpicture}
         \end{figure}
+  \newpage
+  \section{Future work}
   \newpage
   \section*{Conclusion}
   \addcontentsline{toc}{section}{Conclusion}
