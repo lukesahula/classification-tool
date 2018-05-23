@@ -241,13 +241,13 @@ class EvaluationTool():
 
     def compute_correlation_matrix(self, data):
         corr_matrix = data.corr().fillna(0)
-        return corr_matrix
+        return corr_matrix.abs()
 
     def compute_missingness_matrix(self, data):
         data[~pd.isnull(data)] = 1
         data[pd.isnull(data)] = 0
         corr_matrix = data.corr().fillna(0)
-        return corr_matrix
+        return corr_matrix.abs()
 
     def compute_cond_prob_matrix(self, data):
         def compute_conditional_probabilities(column, df):
