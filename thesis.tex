@@ -314,18 +314,18 @@
         Computing this correlation for each existing pair of all the features in the dataset we get a 51 x 51 symmetric matrix with the number 1 on the main diagonal. Every element in this matrix symbolizes the correlation between the feature represented by the element's row, and the feature represented by the element's column. The matrix is symmetric because the pair of features (X, Y) has the same correlation as the pair (Y, X). Furthermore, the main diagonal is full of 1s because a feature is completely correlated with itself. However, in some cases it is impossible to compute the correlation, and that is when the feature is always missing. In this thesis, its correlation value is replaced by 0. With this matrix, it is possible to create a heatmap in order to provide a more visual representation, seen in Figure [\ref{figure:correlation_matrix}]. It is possible to see that some pairs of features in fact are highly correlated.
         \begin{figure}
           \centering
+          \includegraphics[scale=0.5]{thesis_res/corr/heatmap_cropped.png}
           \caption{Correlation matrix showing the amount of correlation among pairs of features}
           \label{figure:correlation_matrix}
-          \includegraphics[scale=0.6]{thesis_res/corr/heatmap_cropped.png}
         \end{figure}
       \newpage
       \subsubsection{Missingness correlation matrix}
-        The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it shows how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in Figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random [\ref{sec:missmech}] grows even more likely.
+        The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it shows how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in Figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random [\ref{sec:missmech}].
         \begin{figure}
           \centering
+          \includegraphics[scale=0.5]{thesis_res/miss/heatmap_cropped.png}
           \caption{Correlation matrix showing the amount of correlation among pairs of features based on them being missing or not}
           \label{figure:missingness_matrix}
-          \includegraphics[scale=0.6]{thesis_res/miss/heatmap_cropped.png}
         \end{figure}
       \newpage
       \subsubsection{Conditional probabilities matrix}
@@ -338,10 +338,32 @@
         \end{equation}
         \begin{figure}
           \centering
-          \caption{Conditional probabilities matrix showing each element's (i, j) probability that feature j is not missing when feature i is missing}
+          \includegraphics[scale=0.5]{thesis_res/cond/heatmap_cropped.png}
+          \caption{Conditional probabilities matrix showing each element's (i,j) probability that feature j is not missing when feature i is missing}
           \label{figure:cond_prob_matrix}
-          \includegraphics[scale=0.6]{thesis_res/cond/heatmap_cropped.png}
         \end{figure}
+        \newpage
+        \noindent However, setting the correlation thresholds to 0.3, 0.5 and 0.8 showed that a very little amount of features have some correlated features that could substitute for them. With the threshold set to 0.3, there are 20 features that have at least one candidate. [\ref{figure:corr_03}] As expected, when the not-missing probability threshold increases, the amount of correlated features decreases. Figure [\ref{figure:corr_05}] shows that with correlation threshold set to 0.5, only 8 relevant features remain. Correlation threshold of 0.8 further reduces this number to 6 [\ref{figure:corr_08}]. Note that the scale is different in each of the pictures, in [\ref{figure:corr_03}] the yellow color marks the number of substitutable features as 9, while in [\ref{figure:corr_05}] it is already only 4 and in [\ref{figure:corr_08}] it is 2.
+        \begin{figure}
+          \centering
+          \includegraphics[scale=0.5]{thesis_res/corr_03_cropped.png}
+          \caption{Counts of potential substitions based on their non-missingness probability for each feature with correlation threshold 0.3}
+          \label{figure:corr_03}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \includegraphics[scale=0.5]{thesis_res/corr_05_cropped.png}
+          \caption{Counts of potential substitions based on their non-missingness probability for each feature with correlation threshold 0.5}
+          \label{figure:corr_05}
+        \end{figure}
+        \newpage
+        \begin{figure}
+          \centering
+          \includegraphics[scale=0.5]{thesis_res/corr_08_cropped.png}
+          \caption{Counts of potential substitions based on their non-missingness probability for each feature with correlation threshold 0.8}
+          \label{figure:corr_08}
+        \end{figure}
+        \noindent A conclusion can be made, that although there are some features that can be substituted by other features when they are missing, the probability of the substitution features not being missing is not very high. Also, as the demand for correlation between these features increases, the amount of potential candidates decreases rapidly.
   \newpage
   \section{Handling missing values}
     In statistics, {\it missing values} or {\it missing data} mark the absence of value in a feature variable of an observed sample. Missing data within a dataset make it impossible for conventional machine learning algorithms to properly learn from it. Many of these algorithms require complete data and do not have an implicit way of handling missing values. In order for the statistical analysis to work, the missing data have to be somehow dealt with beforehand. \cite{otfi}
@@ -431,9 +453,9 @@
     For a better comprehension of precision and recall, Figure [\ref{figure:precrec}] shows what they represent.
     \begin{figure}
       \centering
+      \includegraphics[scale=0.8]{thesis_res/precrec.png}
       \caption{Visual representation of precision and recall \cite{precrec}}
       \label{figure:precrec}
-      \includegraphics[scale=0.8]{thesis_res/precrec.png}
     \end{figure}
     \newpage
     \subsection{Results}
@@ -565,7 +587,7 @@
     \\
     The Strawman imputation method ended up close to the baseline, but did not surpass it. The Strawman variation using mean of the features as the imputation provided better results than the median variation.
     \\~\\
-    Apart from that, an analysis on the dataset was done to find the correlations between the features' values and their missingness. Some of the features proved to be missing exclusively together, but not all of them. Some features' values are highly correlated and in some cases it was found out that when one the features is missing, then its correlated pair has a high probability of being not missing. This can be used in the future to further enhance the classifier's performance.
+    Apart from that, an analysis on the dataset was done to find the correlations between the features' values and their missingness. Some of the features proved to be missing exclusively together, but not all of them. Some features' values are significantly correlated and in some cases it was found out that when one the features is missing, then its correlated pair has a reasonable probability of being not missing. This can be used in the future to further enhance the classifier's performance.
   \newpage
   \bibliography{thesis}
   \addcontentsline{toc}{section}{Reference}
