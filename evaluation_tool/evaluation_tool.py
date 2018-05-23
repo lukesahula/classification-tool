@@ -225,7 +225,7 @@ class EvaluationTool():
             pairs = np.column_stack(np.where(condition))
             probs = np.zeros((len(pairs), 1))
             for j in range(len(pairs)):
-                probs[j] = cond_probs.loc[pairs[j][1], pairs[j][0]]
+                probs[j] = cond_probs.loc[pairs[j][0], pairs[j][1]]
 
             conditioned_pairs.append(np.append(pairs, probs, axis=1))
 
@@ -276,5 +276,4 @@ class EvaluationTool():
         data[pd.isnull(data)] = 0
 
         matrix = data.apply(compute_conditional_probabilities, axis=0, df=data)
-        matrix = matrix.transpose()
         return matrix

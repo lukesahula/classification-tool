@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from joblib import Parallel, delayed
 from classifiers.decision_tree import DecisionTree
@@ -20,22 +19,19 @@ class RandomForest():
         self.feature_matrix = None
         self.labels = None
         self.trained = False
-        self.predicted = 0
 
-    def init_tree(self, seed, count):
+    def init_tree(self, seed):
         indices = self.sample_dataset(seed)
         tree = DecisionTree(self.max_features, self.min_samples_split, seed, method=self.method)
-        tree.fit(self.feature_matrix.loc[indices], self.labels[indices], count)
-        print('tree ' + str(count) + ' grown')
+        tree.fit(self.feature_matrix.loc[indices], self.labels[indices])
         return tree
 
     def fit(self, feature_matrix, labels):
         self.feature_matrix = feature_matrix
         self.labels = labels
-        counts = list(range(100))
         random_seeds = self.random_state.randint(0, 10000, self.n_estimators)
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-             delayed(self.init_tree)(seed, count) for seed, count in zip(random_seeds, counts)
+             delayed(self.init_tree)(seed) for seed in zip(random_seeds)
         )
         self.trained = True
 
@@ -46,13 +42,6 @@ class RandomForest():
 
     def predict(self, observations, parallel):
         ind_predictions = parallel(delayed(tree.predict)(observations) for tree in self.estimators_)
-        from utils.utils import tee
-        self.predicted += 1
-        grow_dir = 'am_growing'
-        output = os.path.join(grow_dir, 'predicting')
-        text = 'File ' + str(self.predicted) + ' predicted'
-        with open(output, 'a', encoding='utf-8') as f:
-            tee(text, f)
         return [self.mode(ind_pred) for ind_pred in zip(*ind_predictions)]
 
     def sample_dataset(self, seed):

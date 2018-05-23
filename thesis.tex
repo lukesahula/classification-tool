@@ -30,6 +30,8 @@
   \renewcommand{\contentsname}{Table of contents}%
   \renewcommand{\figurename}{Figure}%
   \renewcommand{\tablename}{Table}%
+  \renewcommand{\listfigurename}{List of figures}%
+  \renewcommand{\listtablename}{List of tables}%
 }
 \title{Handling Missing Values in Decision Forests in the Encrypted Network Traffic}
 \date{2018-05-25}
@@ -51,14 +53,14 @@
 
       \vspace{2cm}
 
-      \includegraphics[scale=0.2]{thesis_res/ctu_logo_blue.pdf}
+      \includegraphics[scale=0.3]{thesis_res/ctu_logo_blue.pdf}
 
       \vspace{1cm}
       Department of Computer Science \\
       {\large Faculty of Electrical Engineering \\}
       {\LARGE Czech Technical University in Prague \\}
 
-      \vspace{5.5cm}
+      \vspace{4.8cm}
 
     \end{center}
 
@@ -88,7 +90,9 @@
   \newpage
   \section*{Declaration}
     \thispagestyle{empty}
-    I declare that the presented work was developed independently and that I have listed all sources of information used within it in accordance with the methodical instructions for observing the ethical principles in the preparation of university theses. In Prague, 25. May 2018
+    I declare that the presented work was developed independently and that I have listed all sources of information used within it in accordance with the methodical instructions for observing the ethical principles in the preparation of university theses.
+    \\~\\
+    ..................... in Prague, on the 25th of May 2018
   \newpage
   \section*{Abstract}
     \thispagestyle{empty}
@@ -102,8 +106,12 @@
   \newpage
   {\hypersetup{hidelinks}
   \thispagestyle{empty}
-  \tableofcontents}
+  \tableofcontents
   \thispagestyle{empty}
+  \newpage
+  \thispagestyle{empty}
+  \listoffigures
+  \listoftables}
   \newpage
 
   \section*{Introduction}
@@ -274,7 +282,7 @@
       \subsubsection{Bootstrap aggregating}
         Bootstrap aggregating, also called {\it bagging}, was first introduced in \cite{bagging}. For a forest of size $m$ and training dataset of size $n$, bagging assigns a dataset of size $n'$ to each of the $m$ trees. These datasets are created by selecting random samples with replacement from the training dataset. This means that some objects are not present in the sampled dataset and some objects might be repeated. The trees are then trained on their corresponding sample. The size of the bootstrapped datasets is usually parametrized in the forest, but the most common choice is to select $n'$ = $n$.
       \subsubsection{Random feature subsets}
-        Random feature subsets inject randomness directly into the growing process of the decision tree. When looking for the best possible split, a standard decision tree looks across all dimensions of the training data.[\ref{alg:best_split}] However, trees in Breiman forests only use a random subset of the dimensions, sampled for each split node individually. The number of dimensions selected by this sampling is another hyperparameter of the random forest, denoted in this thesis as $maxFeatures$. The value of this parameter affects the correlation between individual trees. \cite{brabec} The least corellation would be achieved by setting $maxFeatures = 1$. Selecting $maxFeatures = numberOfDimensions$ removes all randomness from the individual trees' splitting process, leaving only the randomness induced by bagging. That, however, is usually not enough. More so when the training dataset contains a big amount of objects. In this particular case, the forest would not bring many advantages over a decision tree. An empirically tested rule of thumb says that $splitFeaturesCount = \sqrt{numberOfDimensions}$ is a reasonable default for classification tasks. \cite{ert} Curiously enough, the default for regression classes seems to be equal to the number of dimensions. \cite{ert}
+        Random feature subsets inject randomness directly into the growing process of the decision tree. When looking for the best possible split, a standard decision tree looks across all dimensions of the training data. [\ref{alg:best_split}] However, trees in Breiman forests only use a random subset of the dimensions, sampled for each split node individually. The number of dimensions selected by this sampling is another hyperparameter of the random forest, denoted in this thesis as $maxFeatures$. The value of this parameter affects the correlation between individual trees. \cite{brabec} The least corellation would be achieved by setting $maxFeatures = 1$. Selecting $maxFeatures = numberOfDimensions$ removes all randomness from the individual trees' splitting process, leaving only the randomness induced by bagging. That, however, is usually not enough. More so when the training dataset contains a big amount of objects. In this particular case, the forest would not bring many advantages over a decision tree. An empirically tested rule of thumb says that $splitFeaturesCount = \sqrt{numberOfDimensions}$ is a reasonable default for classification tasks. \cite{ert} Curiously enough, the default for regression classes seems to be equal to the number of dimensions. \cite{ert}
   \newpage
   \section{Network dataset}
     \label{sec:datadesc}
@@ -291,7 +299,7 @@
         \label{sec:analysis}
         This subchapter examines the dataset and attempts to analyse the nature of missingness of its missing data. The first step of the analysis was to look at the features and see how often and when are they missing. After that, a {\it correlation matrix} was constructed to see the correlation among pairs of the features. Another correlation matrix was constructed from an altered dataset where each value was replaced by 1 and each missing value was replaced by 0 to see the how correlated the features' missingness is. A matrix of conditional probabilities was also created to provide information on how often is one feature not missing when the other one is missing.
       \subsubsection{Missingness}
-        In the whole dataset, there are only 4 features that are not missing from any of the objects. 12 features, on the other hand, are missing in more than 90\% of the time. The average missingness throughout the dataset is roughly 51\%. Some features are closely tied together and when one of them is missing, the others are missing as well. Therefore the assumption is that some of the features are not missing at random.[\ref{sec:missmech}] Other features, however, do not fulfill this assumption and could possibly be used when others are missing if they are somehow correlated.
+        In the whole dataset, there are only 4 features that are not missing from any of the objects. 12 features, on the other hand, are missing in more than 90\% of the time. The average missingness throughout the dataset is roughly 51\%. Some features are closely tied together and when one of them is missing, the others are missing as well. Therefore the assumption is that some of the features are not missing at random. [\ref{sec:missmech}] Other features, however, do not fulfill this assumption and could possibly be used when others are missing if they are somehow correlated.
       \subsubsection{Correlation matrix}
         The second step in this analysis was to figure out how are the features correlated to each other. For that, the {\it Pearson correlation coefficient} was used, defined as: \cite{correlation}
         \begin{equation}
@@ -312,7 +320,7 @@
         \end{figure}
       \newpage
       \subsubsection{Missingness correlation matrix}
-        The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it shows how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in Figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random[\ref{sec:missmech}] grows even more likely.
+        The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it shows how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in Figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random [\ref{sec:missmech}] grows even more likely.
         \begin{figure}
           \centering
           \caption{Correlation matrix showing the amount of correlation among pairs of features based on them being missing or not}
@@ -330,7 +338,7 @@
         \end{equation}
         \begin{figure}
           \centering
-          \caption{Conditional probabilities matrix}
+          \caption{Conditional probabilities matrix showing each element's (i, j) probability that feature j is not missing when feature i is missing}
           \label{figure:cond_prob_matrix}
           \includegraphics[scale=0.6]{thesis_res/cond/heatmap_cropped.png}
         \end{figure}
@@ -429,7 +437,7 @@
     \end{figure}
     \newpage
     \subsection{Results}
-      This subsection presents the results of the individual experiments. The main focus is the average prediction precision, recall and also the number of classes that were predicted with precision above specific thresholds. The following tables will always show all three evaluation approaches (unaggregated, aggregated, relaxed) for every tested method. The tested methods are the baseline[\ref{sec:baseline}] method, the Strawman[\ref{sec:strawman}] imputation method both with mean and median values, the OTFI[\ref{sec:otfi}] method and the MIA[\ref{sec:mia}] method. The two variations of the Strawman method are further referred to simply as mean and median.
+      This subsection presents the results of the individual experiments. The main focus is the average prediction precision, recall and also the number of classes that were predicted with precision above specific thresholds. The following tables will always show all three evaluation approaches (unaggregated, aggregated, relaxed) for every tested method. The tested methods are the baseline [\ref{sec:baseline}] method, the Strawman [\ref{sec:strawman}] imputation method both with mean and median values, the OTFI [\ref{sec:otfi}] method and the MIA [\ref{sec:mia}] method. The two variations of the Strawman method are further referred to simply as mean and median.
       \\~\\
       The randomness factor of random forests gives the resulting precision and recall a variance of about 1\%. So if one method has a precision of 10\% and another one only 8\%, we can assume that their performance could be the same.
       \subsubsection{Average overall precision}

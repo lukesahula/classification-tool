@@ -91,4 +91,4 @@ class TestRandomForest():
 
         skprec = eval_tool.get_avg_precision(stats=skstats)
 
-        assert math.isclose(prec, skprec, abs_tol=0.011)
+        assert math.isclose(prec, skprec, abs_tol=0.020)
