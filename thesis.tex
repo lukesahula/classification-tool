@@ -2,6 +2,7 @@
 
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{amssymb}
+\usepackage[toc]{appendix}
 \usepackage{mathtools}
 \usepackage{amsmath} 
 \usepackage[utf8]{inputenc}
@@ -22,6 +23,7 @@
   linkcolor = gray,
 }
 \usepackage{algpseudocode, algorithm}
+\usepackage[toc]{appendix}
 
 \urlstyle{same}
 \bibliographystyle{IEEEtran}
@@ -314,7 +316,7 @@
         Computing this correlation for each existing pair of all the features in the dataset we get a 51 x 51 symmetric matrix with the number 1 on the main diagonal. Every element in this matrix symbolizes the correlation between the feature represented by the element's row, and the feature represented by the element's column. The matrix is symmetric because the pair of features (X, Y) has the same correlation as the pair (Y, X). Furthermore, the main diagonal is full of 1s because a feature is completely correlated with itself. However, in some cases it is impossible to compute the correlation, and that is when the feature is always missing. In this thesis, its correlation value is replaced by 0. With this matrix, it is possible to create a heatmap in order to provide a more visual representation, seen in Figure [\ref{figure:correlation_matrix}]. It is possible to see that some pairs of features in fact are highly correlated.
         \begin{figure}
           \centering
-          \includegraphics[scale=0.5]{thesis_res/corr/heatmap_cropped.png}
+          \includegraphics[scale=0.4]{thesis_res/corr/heatmap_cropped.png}
           \caption{Correlation matrix showing the amount of correlation among pairs of features}
           \label{figure:correlation_matrix}
         \end{figure}
@@ -323,33 +325,40 @@
         The same way as before, it is possible to create a correlation matrix from the dataset where every not missing feature is replaced by number 1 and every missing feature is replaced by number 0. This correlation matrix tells us how correlated the missingness of pairs of features is. To put it in other words, it shows how dependent the fact that a feature is missing on another feature being missing or not missing. A heatmap of this matrix is in Figure [\ref{figure:missingness_matrix}]. However, the features that are never missing, or the ones that are always missing, have no variance because their value is either always 1 or always 0. Their correlation therefore could not be computed and set to 0. It is possible to see that the most correlated are the features that are next to each other, meaning that they come from the same source or that they are connected to each other. This ties together with the assumption that those features are not missing at random [\ref{sec:missmech}].
         \begin{figure}
           \centering
-          \includegraphics[scale=0.5]{thesis_res/miss/heatmap_cropped.png}
+          \includegraphics[scale=0.4]{thesis_res/miss/heatmap_cropped.png}
           \caption{Correlation matrix showing the amount of correlation among pairs of features based on them being missing or not}
           \label{figure:missingness_matrix}
         \end{figure}
       \newpage
       \subsubsection{Conditional probabilities matrix}
         The conditional probabilities matrix represents the probability that feature X is not missing when feature Y is missing [\ref{eq:prob}]. This matrix is not symmetric because the probabilities differ for pairs (X, Y) and (Y, X). [\ref{figure:cond_prob_matrix}] The yellow belt going from the top to bottom symbolizes the features there are never missing.  The probability that the first four features are missing is zero, therefore the conditional probability that other features are not missing when the first four are is also zero. The value on the i-th row in the j-th column gives the probability that feature j is not missing when feature i is missing.
-        \\~\\
-        Combined with the correlation matrix, it is possible to set a correlation threshold and pick only those pairs of features, that are correlated above that threshold. With this list of pairs it is then possible to look at the conditional probabilities matrix and see how often is one of the features not missing when the other one is. That way, an algorithm like the surrogate splits \cite{splits} could take these highly correlated pairs into account. If there were a feature that is missing everytime another feature is not missing, the algorithm could base the decision on the value of the other feature, for example.
         \begin{equation}
           \label{eq:prob}
           P_{not missing | missing}(X, Y)
         \end{equation}
         \begin{figure}
           \centering
-          \includegraphics[scale=0.5]{thesis_res/cond/heatmap_cropped.png}
+          \includegraphics[scale=0.4]{thesis_res/cond/heatmap_cropped.png}
           \caption{Conditional probabilities matrix showing each element's (i,j) probability that feature j is not missing when feature i is missing}
           \label{figure:cond_prob_matrix}
         \end{figure}
         \newpage
-        \noindent However, setting the correlation thresholds to 0.3, 0.5 and 0.8 showed that a very little amount of features have some correlated features that could substitute for them. With the threshold set to 0.3, there are 20 features that have at least one candidate. [\ref{figure:corr_03}] As expected, when the not-missing probability threshold increases, the amount of correlated features decreases. Figure [\ref{figure:corr_05}] shows that with correlation threshold set to 0.5, only 8 relevant features remain. Correlation threshold of 0.8 further reduces this number to 6 [\ref{figure:corr_08}]. Note that the scale is different in each of the pictures, in [\ref{figure:corr_03}] the yellow color marks the number of substitutable features as 9, while in [\ref{figure:corr_05}] it is already only 4 and in [\ref{figure:corr_08}] it is 2.
+      \subsubsection{Feature substitution}
+        \noindent Combining the conditional probabilities matrix with the correlation matrix, it is possible to set a correlation threshold and pick only those pairs of features that are correlated above that threshold. With this list of pairs it is then possible to look at the conditional probabilities matrix and see how often is one of the features not missing when the other one is. That way, an algorithm like the surrogate splits \cite{splits} could take these highly correlated pairs into account. If there were a feature that is missing everytime another feature is not missing, the algorithm could base the decision on the value of the other feature.
+        \\~\\
+        \noindent In other words, let us for example say that feature A is highly correlated with feature B. Feature A is missing 70\% of times while feature B is missing only 20\% of the time. Since they are highly correlated, the classifier can base its decision on feature B instead of on feature A when feature A is missing. The next part of this analysis looks at each feature and studies how many different features can be used in the classification instead of them when they are missing.
+        \\~\\
+        \noindent Setting the correlation thresholds to 0.3, 0.5 and 0.8 showed that a small amount of features have some correlated features that could substitute for them. With the threshold set to 0.3, there are 20 features that have at least one candidate. [\ref{figure:corr_03}][\ref{figure:corr_05}][\ref{figure:corr_08}] The figures show each feature and the number of their correlated counterparts. This count of correlated features depends on the conditional probability of them being not missing when the feature they are correlated to is missing. The numbers on the y axis are the conditional probability thresholds. As expected, when this threshold increases, the amount of correlated features decreases.
+        \newpage
+        \noindent In Figure [\ref{figure:corr_03}] it is possible to see that the most prominent features are features 13, 14 and 15. When they are missing, there is at least a 10\% probability that 9 other features are present that could take their place. As the required probability increases, up until 60\% there are 6 of those features.
         \begin{figure}
           \centering
           \includegraphics[scale=0.5]{thesis_res/corr_03_cropped.png}
           \caption{Counts of potential substitions based on their non-missingness probability for each feature with correlation threshold 0.3}
           \label{figure:corr_03}
         \end{figure}
+        \newpage
+        \noindent Figure [\ref{figure:corr_05}] shows that with correlation threshold set to 0.5, only 8 relevant features remain, with the maximum of 4 correlated features for feature 20. The probability threshold is also much lower than in the previous case.
         \begin{figure}
           \centering
           \includegraphics[scale=0.5]{thesis_res/corr_05_cropped.png}
@@ -357,12 +366,14 @@
           \label{figure:corr_05}
         \end{figure}
         \newpage
+        \noindent Correlation threshold of 0.8 further reduces the number of relevant features to 6 [\ref{figure:corr_08}]. The maximum of correlated features in this case is only 2.
         \begin{figure}
           \centering
           \includegraphics[scale=0.5]{thesis_res/corr_08_cropped.png}
           \caption{Counts of potential substitions based on their non-missingness probability for each feature with correlation threshold 0.8}
           \label{figure:corr_08}
         \end{figure}
+        \\~\\
         \noindent A conclusion can be made, that although there are some features that can be substituted by other features when they are missing, the probability of the substitution features not being missing is not very high. Also, as the demand for correlation between these features increases, the amount of potential candidates decreases rapidly.
   \newpage
   \section{Handling missing values}
@@ -580,16 +591,24 @@
   \section*{Conclusion}
   \addcontentsline{toc}{section}{Conclusion}
     The focus of this thesis was to examine the problem of handling missing values in network traffic datasets. The thesis introduced a number of existing methods for imputation of missing data, but not all of them are relevant to the network datasets. Most of the algorithms do not scale well with bigger amounts of data missing or they run very slow on big datasets, so only the relevant were implemented.
-    \\
-    The implemented methods were tested and compared, showing that the MIA imputation method provides a slight improvement in prediction precision over the method used as the baseline.
-    \\
+    \\~\\
+    The implemented methods were tested and compared, showing that the MIA imputation method provides a slight improvement in both prediction precision and prediction recall over the method used as the baseline. While the baseline's unaggregated averaged precision was 61\%, the MIA method's averaged precision was about 65\%. In the aggregated approach, baseline's score is 52\% and MIA's 56\%. The relaxed precision is 53\% for the baseline and 58\% for MIA. As for recall, baseline's average is 57\% unaggregated, 65\% aggregated and 66\% relaxed, while MIA scored about one percent higher with 58\% unaggregated, 66\% aggregated and 68\% relaxed.
+    \\~\\
     The OTFI method on the other hand provided much worse results than the baseline, showing that it also belongs to the methods that do not scale well with heavy missingness because it uses only the non-missing data in computing the split statistics.
-    \\
+    \\~\\
     The Strawman imputation method ended up close to the baseline, but did not surpass it. The Strawman variation using mean of the features as the imputation provided better results than the median variation.
     \\~\\
     Apart from that, an analysis on the dataset was done to find the correlations between the features' values and their missingness. Some of the features proved to be missing exclusively together, but not all of them. Some features' values are significantly correlated and in some cases it was found out that when one the features is missing, then its correlated pair has a reasonable probability of being not missing. This can be used in the future to further enhance the classifier's performance.
   \newpage
   \bibliography{thesis}
   \addcontentsline{toc}{section}{Reference}
+  \newpage
+  \appendix
+    \section{Enclosed CD contents}
+      The root directory on the enclosed CD contains the following items:
+      \begin{description}
+        \item[thesis.pdf:] The PDF file with the thesis.
+        \item[src:] The source directory with all implemented code written in Python.
+      \end{description}
 \end{document}
 
