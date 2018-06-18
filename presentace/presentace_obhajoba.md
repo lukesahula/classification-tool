@@ -21,8 +21,8 @@ Random forest, <b>source:</b> http://blog.yhat.com
 <br />
 
 <div align="right">
-	Author: Lukáš Sahula <br />
-	Supervisor: Ing. Jan Brabec <br />
+	Author: <b>Lukáš Sahula</b> <br />
+	Supervisor: <b>Ing. Jan Brabec</b> <br />
 	Bachelor thesis <br /> <br />
     Czech Technical University in Prague <br />
     Faculty of Electrical Engineering <br />
@@ -39,8 +39,8 @@ Random forest, <b>source:</b> http://blog.yhat.com
 <table align="center">
 <thead>
 <tr>
-<td bgcolor="#2F2F2F"><font color=#fff8e1>Name</font></td>
 <td bgcolor="#2F2F2F"><font color=#fff8e1>Animal</font></td>
+<td bgcolor="#2F2F2F"><font color=#fff8e1>Name</font></td>
 <td bgcolor="#2F2F2F"><font color=#fff8e1>Age</font></td>
 <td bgcolor="#2F2F2F"><font color=#fff8e1>Gender</font></td>
 <td bgcolor="#2F2F2F"><font color=#fff8e1>Description</font></td>
@@ -48,15 +48,15 @@ Random forest, <b>source:</b> http://blog.yhat.com
 </thead>
 <tbody>
 <tr>
-<td align="right">Rex</td>
 <td align="right">Dog</td>
+<td align="right">Rex</td>
 <td align="right">3</td>
-<td align="right">Male</td>
+<td align="right" style="color: red;">X</td>
 <td align="right">A good boy</td>
 </tr>
 <tr>
-<td align="right">Lady</td>
 <td align="right">Dog</td>
+<td align="right">Lady</td>
 <td align="right" style="color: red;">X</td>
 <td align="right">Female</td>
 <td align="right" style="color: red;">X</td>
@@ -69,15 +69,15 @@ Random forest, <b>source:</b> http://blog.yhat.com
 <td align="right" style="color: red;">X</td>
 </tr>
 <tr>
-<td align="right">Kitty</td>
 <td align="right">Cat</td>
+<td align="right">Kitty</td>
 <td align="right" style="color: red;">X</td>
 <td align="right">Female</td>
 <td align="right">Likes to cuddle</td>
 </tr>
 <tr>
-<td align="right">Gizmo</td>
 <td align="right" style="color: red">X</td>
+<td align="right">Gizmo</td>
 <td align="right" style="color: red;">X</td>
 <td align="right">Male</td>
 <td align="right" style="color: red;">X</td>
@@ -97,10 +97,11 @@ Random forest, <b>source:</b> http://blog.yhat.com
 
 ### ... in the Encrypted Network Dataset
 - Data from network proxy logs
-- Classification of malware 
+- Detection and classification of malware
 - Over 100 classes of malware
 - 50 features
 - Data missingness over 50%
+- 600 million of records
 
 ---
 
@@ -115,7 +116,7 @@ Random forest, <b>source:</b> http://blog.yhat.com
 ### Conditional probabilities of missingness
 <p align="center">
 	<img src="./cond.png" style="width: 44%"/> <br />
-    P(i_missing | j_not_missing)
+    P(j_not_missing | i_missing)
 </p>
 
 ---
@@ -123,19 +124,41 @@ Random forest, <b>source:</b> http://blog.yhat.com
 ### Feature substitution
 <p align="center">
 	<img src="./corr_thres.png" style="width: 44%"/> <br />
-	Feature pairs with PCC above 0.3
+	Number of features with PCC > 0.3 that can replace each feature
 </p>
 
 ---
 
 ### Existing methods for missing data imputation
 - <b>Baseline</b>
-- <b>Strawman imputation (mean or median)</b>
+- <b>Strawman imputation</b>
 - <b>On-the-fly-imputation method</b>
 - <b>Missingness incorporated in attributes</b>
 - MissForest
+- mForest
 - Surrogate splits
 - ...
+
+---
+
+### Baseline method
+- Compute the best split with all the missing values replaced by a constant value smaller than all other values
+
+### Strawman imputation
+- Impute the missing values using the mean or median value
+
+### On-the-fly-imputation
+- Impute the missing value using other values of the inbag data (at the current node) and their frequency
+
+---
+
+### Missingness incorporated in attributes
+
+- Similar to the baseline methods
+- Compute the best split with all the missing values replaced by a constant value smaller than all other values first
+- Compute the best split again with missing values replaced by a constant value <b>bigger</b> than all other values
+- Compute the best split treating all missing values as -1 and all non-missing values as 1
+- Of these 3 splits, choose the one with the biggest information gain
 
 ---
 
@@ -176,7 +199,7 @@ Random forest, <b>source:</b> http://blog.yhat.com
 <tr>
 <td align="right">Baseline</td>
 <td align="right">0.61</td>
-<td align="right">0.57</td>
+<td align="right" style="color: blue">0.57</td>
 <td align="right">22</td>
 <td align="right">54</td>
 <td align="right">70</td>
@@ -229,9 +252,32 @@ Random forest, <b>source:</b> http://blog.yhat.com
 ---
 
 ### Answers
+
+---
+
+### Answers
 #### Method speed comparison
 - Baseline: ~18 hours
 - Strawman: ~18 hours
 - MIA: ~45 hours
 - OTFI: ~100 hours
 
+---
+
+### Answers
+#### Scaling
+- <b>Most of the algorithms do not scale well with bigger amounts of data missing or they run very slow on big datasets, so only the relevant were implemented.</b>
+- Most of the algorithms perform worse as the amount of missing data increases or they run very slow on big datasets, so only the relevant were implemented.
+
+---
+
+### Answers
+#### Wrong entropy equation
+<p align="center">
+	<img src="./entropy_wrong.png" style="width: 50%"/> <br /> <br />
+    Wrong
+</p>
+<p align="center">
+	<img src="./entropy_correct.png" style="width: 50%"/> <br /> <br />
+    Correct
+</p>
